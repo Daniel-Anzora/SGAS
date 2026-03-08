@@ -10,14 +10,14 @@ public class SelectionService {
         Stats sortStats = new Stats();
         Stats quickStats = new Stats();
         
-        //RUNs THE BASELINE: Full Sort or Merge Sort
+        //RUNS THE BASELINE: Full Sort or Merge Sort
         //clones the dataset so the sort doesn't affect the quickselect run
         int sortResult = sort.select(ds.scores.clone(), req.toIndex0(ds.scores.length), sortStats);
 
-        //RUNs THE IMPROVED: Quickselect
+        //RUNS THE IMPROVED: Quickselect
         int quickResult = quick.select(ds.scores.clone(), req.toIndex0(ds.scores.length), req.pivot, quickStats);
 
-        //RETURNs BOTH: The SelectionResult now holds the data for experiment
+        //RETURNS BOTH: The SelectionResult now holds the data for experiment
         return new SelectionResult(quickResult, sortStats, quickStats);
     }
 }
