@@ -17,13 +17,9 @@ public class SelectionRequest {
 
 
     public int toIndex0(int n) {
-        int index = 0;
+        
+        return Math.max(0, Math.min(n - 1, k - 1));
 
 
-
-
-
-
-        return index;
     }
 }

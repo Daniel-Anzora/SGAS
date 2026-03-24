@@ -3,8 +3,12 @@ package engine.selection;
 //Improved selection algorithm
 public class QuickselectSelector {
     public int select(int[] scores, int k0, PivotStrategy pivot, Stats stats) {
+        long start = System.nanoTime();
+        int result = quickSelect(scores, 0, scores.length - 1, k0, pivot, stats);
+        stats.timeNanos = System.nanoTime() - start;
+        return result;
         //searches entire array from index 0 to length - 1
-        return quickSelect(scores, 0, scores.length - 1, k0, pivot, stats);
+    
     }
 
     //"decrease and conquer" approach with recursive calls

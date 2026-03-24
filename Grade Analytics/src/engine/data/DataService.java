@@ -11,7 +11,6 @@ public class DataService {
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
-                if (!line.isEmpty()) continue;
                 
                 try {
                     if (!line.contains(",")) {

@@ -14,7 +14,7 @@ public class MainFrame extends JFrame{
 
 	//input(k value) and output(where results will be printed)
 	private JTextField kField;
-	private Dataset currentDataset;
+	Dataset currentDataset;
 	
 	private JTextArea outputArea;
 	
@@ -78,12 +78,13 @@ public class MainFrame extends JFrame{
     private void runSelection() {
         try {
             int k = Integer.parseInt(kField.getText());
-            //generates random test dataset for now
-            Dataset ds = controller.generateDataset(
-                    engine.data.DatasetType.RANDOM,
-                    100,
-                    42
-            );
+           
+            Dataset ds;
+			if (currentDataset != null) {
+				ds = currentDataset;
+			} else {
+				ds = controller.generateDataset(engine.data.DatasetType.RANDOM, 100, 42);
+			}
             //Creates a selection request which  algorithm and pivot strategy
             SelectionRequest req = new SelectionRequest(
                     SelectionMode.KTH,
