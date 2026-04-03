@@ -49,7 +49,7 @@ public class DataService {
         Random rand = new Random(seed);
         int[] arr = new int[n];
         for (int i = 0; i < n; i++) {
-            arr[1] = rand.nextInt(10000);
+            arr[i] = rand.nextInt(10000);
         }
         return new Dataset("Random", arr);
     }
@@ -67,7 +67,7 @@ public class DataService {
         for (int i = 0; i < n; i++) {
             arr[i] = n - i;
         }
-        Arrays.sort(arr);
+        
         
         return new Dataset("Reverse Sorted", arr);
         
