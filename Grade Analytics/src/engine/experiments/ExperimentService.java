@@ -1,10 +1,10 @@
 package engine.experiments;
 
-import data.DataService;
-import data.Dataset;
-import selection.SelectionService;
-import selection.SelectionResult;
-import selection.SelectionRequest;
+import engine.data.DataService;
+import engine.data.Dataset;
+import engine.selection.SelectionService;
+import engine.selection.SelectionResult;
+
 
 import java.io.*;
 

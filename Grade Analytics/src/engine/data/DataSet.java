@@ -1,12 +1,12 @@
 package engine.data;
 import java.util.*;
 
-public class DataSet {
+public class Dataset {
 
     public final String name;
     public final int[] scores;
 
-    public DataSet(String name, int[] scores) {
+    public Dataset(String name, int[] scores) {
         this.name = name;
         this.scores = scores;
     }

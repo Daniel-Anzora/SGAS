@@ -1,7 +1,7 @@
 package engine.experiments;
 
-import data.DatasetType;
-import selection.SelectionRequest;
+import engine.data.DatasetType;
+import engine.selection.SelectionRequest;
 
 public class BatchRequest
 {

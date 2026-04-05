@@ -1,5 +1,5 @@
 package engine.selection;
-import engine.data.DataSet;
+import engine.data.Dataset;
 
 public class SelectionService {
     //two selectors to compare data

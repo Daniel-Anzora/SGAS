@@ -11,4 +11,18 @@ public class SelectionResult {
         this.sortStats = sortStats;
         this.quickStats = quickStats;
     }
+
+    public int getValue() {
+        return value;
+    }
+
+    public Stats getSortStats() {
+        return sortStats;
+    }
+
+    public Stats getQuickStats() {
+        return quickStats;
+    }
+
+
 }
