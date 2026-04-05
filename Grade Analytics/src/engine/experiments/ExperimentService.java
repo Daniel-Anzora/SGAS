@@ -2,61 +2,105 @@ package engine.experiments;
 
 import engine.data.DataService;
 import engine.data.Dataset;
-import engine.selection.SelectionService;
 import engine.selection.SelectionResult;
+import engine.selection.SelectionService;
+import engine.selection.Stats;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.io.*;
+public class ExperimentService {
 
-public class ExperimentService
-{
-    private DataService data;
-    private SelectionService selection;
+    private static final String DEFAULT_CSV_PATH = "results.csv";
 
-    public ExperimentService(DataService data, SelectionService selection)
-    {
+    private final DataService data;
+    private final SelectionService selection;
+
+    public ExperimentService(DataService data, SelectionService selection) {
         this.data = data;
         this.selection = selection;
     }
 
-    public BatchSummary run(BatchRequest req)
+    // run batch: each size -> generate once, repeat selection, average stats, one csv row per size
+    public BatchSummary run(BatchRequest req) 
     {
-        String csvPath = "results.csv";
+        validate(req);
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter(csvPath)))
+        List<BatchAggregatedRow> rows = new ArrayList<>();
+
+        // loop over each dataset size
+        for (int size : req.sizes) 
         {
-            // csv header
-            writer.println("size, repeat, value, sortTimeNanos, sortComparisons, sortSwaps, quickTimeNanos, quickComparisons, quickSwaps");
+            // Generate dataset using DataService
+            Dataset ds = data.generate(req.datasetType, size, req.seed);
 
-            // Loop over each dataset size
-            for (int size : req.sizes)
+            long sumSortTime = 0;
+            long sumSortComp = 0;
+            long sumSortSwap = 0;
+            long sumQuickTime = 0;
+            long sumQuickComp = 0;
+            long sumQuickSwap = 0;
+
+            // repeat each trial
+            for (int r = 0; r < req.repeats; r++) 
             {
-                // Repeat each trial
-                for (int r = 0; r < req.repeats; r++)
-                {
-                    // Generate dataset using DataService
-                    long seed = r;
-                    Dataset ds = data.generate(req.datasetType, size, seed);
-
-                    // Run selection using SelectionService
-                    SelectionResult result = selection.run(req.selectionReq, ds);
-
-                    // Write row to csv
-                    writer.printf("%d, %d, %d, %d, %d, %d, %d, %d, %d%n", 
-                    size, 
-                    r,
-                    result.value,
-                    result.sortStats != null ? result.sortStats.timeNanos   : 0,
-                    result.sortStats != null ? result.sortStats.comparisons : 0,
-                    result.sortStats != null ? result.sortStats.swaps : 0,
-                    result.quickStats != null ? result.quickStats.timeNanos : 0,
-                    result.quickStats != null ? result.quickStats.comparisons : 0,
-                    result.quickStats != null ? result.quickStats.swaps : 0);
+                // Run selection using SelectionService
+                SelectionResult result = selection.run(req.selectionReq, ds);
+                Stats sort = result.getSortStats();
+                Stats quick = result.getQuickStats();
+                if (sort != null) {
+                    sumSortTime += sort.timeNanos;
+                    sumSortComp += sort.comparisons;
+                    sumSortSwap += sort.swaps;
+                }
+                if (quick != null) {
+                    sumQuickTime += quick.timeNanos;
+                    sumQuickComp += quick.comparisons;
+                    sumQuickSwap += quick.swaps;
                 }
             }
+
+            // average stats for this size
+            double d = req.repeats;
+            rows.add(
+                    new BatchAggregatedRow(
+                            size,
+                            sumSortTime / d,
+                            sumSortComp / d,
+                            sumSortSwap / d,
+                            sumQuickTime / d,
+                            sumQuickComp / d,
+                            sumQuickSwap / d));
+        }
+
+        try 
+        {
+            CsvExporter.export(rows, DEFAULT_CSV_PATH);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new UncheckedIOException("Failed to export batch CSV", e);
+        }
+        return new BatchSummary(DEFAULT_CSV_PATH);
     }
-    return new BatchSummary(csvPath);
-}
+
+    // check batch request fields
+    private static void validate(BatchRequest req)
+     {
+        if (req == null) {
+            throw new IllegalArgumentException("BatchRequest is null");
+        }
+        if (req.sizes == null || req.sizes.length == 0) {
+            throw new IllegalArgumentException("sizes must be non-null and non-empty");
+        }
+        if (req.repeats <= 0) {
+            throw new IllegalArgumentException("repeats must be positive");
+        }
+        if (req.datasetType == null) {
+            throw new IllegalArgumentException("datasetType is null");
+        }
+        if (req.selectionReq == null) {
+            throw new IllegalArgumentException("selectionReq is null");
+        }
+    }
 }
