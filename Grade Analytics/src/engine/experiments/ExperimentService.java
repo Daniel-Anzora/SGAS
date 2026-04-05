@@ -11,7 +11,7 @@ import java.io.*;
 public class ExperimentService
 {
     private DataService data;
-    provate SelectionService selection;
+    private SelectionService selection;
 
     public ExperimentService(DataService data, SelectionService selection)
     {
