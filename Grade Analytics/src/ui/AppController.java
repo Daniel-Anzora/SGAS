@@ -7,6 +7,8 @@ import engine.data.DatasetType;
 import engine.selection.SelectionRequest;
 import engine.selection.SelectionResult;
 import engine.selection.SelectionService;
+import engine.experiments.BatchRequest;
+import engine.experiments.BatchSummary;
 import engine.experiments.ExperimentService;
 
 public class AppController {
@@ -35,9 +37,12 @@ public class AppController {
     public Dataset generateDataset(engine.data.DatasetType type, int size, long seed) {
         return data.generate(type, size, seed);
     }
-    //Runs performance experiments comparing algorithms
+    /** Runs a batch experiment and exports averaged metrics to CSV. */
+    public BatchSummary runBatch(BatchRequest req) {
+        return experiments.run(req);
+    }
+
     public ExperimentService getExperimentService() {
         return experiments;
     }
-    
 }

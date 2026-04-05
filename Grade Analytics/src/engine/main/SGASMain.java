@@ -34,6 +34,7 @@ public class SGASMain extends JFrame{
             new int[] {100, 200, 300, 400, 500},
             5,
             DatasetType.RANDOM,
+            42L,
             new SelectionRequest(
                 SelectionMode.KTH,
                 MethodChoice.BOTH,
@@ -41,7 +42,7 @@ public class SGASMain extends JFrame{
                 100
             )
         );
-        BatchSummary summary = controller.getExperimentService().run(req);
+        BatchSummary summary = controller.runBatch(req);
         System.out.println(summary.csvPath);
     }
 }
