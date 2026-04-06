@@ -1,8 +1,23 @@
 package engine.selection;
 
+
 public class SortSelector {
     
     public int select(int[] scores, int k0, Stats stats) {
+
+        if(scores == null) {
+            throw new IllegalArgumentException("scores cannot be null");
+        }
+        if(scores.length == 0){
+            throw new IllegalArgumentException("scores cannot be empty");           
+        }
+        if(k0 < 0 || k0 >= scores.length){
+            throw new IllegalArgumentException("k0 is out of bounds");
+        }
+        if (stats == null){
+            throw new IllegalArgumentException("stats cannot be null");
+        }
+
         int n = scores.length;
         
         long start = System.nanoTime();
