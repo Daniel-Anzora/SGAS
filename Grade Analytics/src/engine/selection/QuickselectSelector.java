@@ -3,45 +3,72 @@ package engine.selection;
 //Improved selection algorithm
 public class QuickselectSelector {
     public int select(int[] scores, int k0, PivotStrategy pivot, Stats stats) {
-        //searches entire array from index 0 to length - 1
-        return quickSelect(scores, 0, scores.length - 1, k0, pivot, stats);
+        //performance timer
+        long start = System.nanoTime();
+
+        //Initial call to the recursive quickSelect method covering the full array range
+        int result = quickSelect(scores, 0, scores.length - 1, k0, pivot, stats);
+        stats.timeNanos = System.nanoTime() - start;
+
+        //returns the k-th smallest element
+        return result;
     }
 
-    //"decrease and conquer" approach with recursive calls
+    // Recursive method that narrows the search range (Decrease and Conquer)
     private int quickSelect(int[] arr, int low, int high, int k, PivotStrategy strategy, Stats stats) {
-        //base case: if only one element, return it
-        if (low == high) return arr[low];
+        //Base case
+        if (low >= high) return arr[low];
+        // Partition the array using Hoare logic and get the split point 'j'
+        int pIndex = partition(arr, low, high, strategy, stats);
 
-        //Picks a pivot based on the Strategy Enum
-        //If strategy is FIRST, picks low. Otherwise, picks high.
-        int pivotIndex = (strategy == PivotStrategy.FIRST) ? low : high; 
-        
-        //Moves our chosen pivot to the 'high' position for the partition step
-        swap(arr, pivotIndex, high, stats);
-
-        //Partitions the array so small numbers are left and big numbers are right
-        int pIndex = partition(arr, low, high, stats);
-
-        //Checks if the pivot landed exactly on the 'k'
-        if (k == pIndex) return arr[k];
-        else if (k < pIndex) return quickSelect(arr, low, pIndex - 1, k, strategy, stats);//Decrease by ignoring right half
-        else return quickSelect(arr, pIndex + 1, high, k, strategy, stats);//Decrease by ignoring left half
-    }
-
-    private int partition(int[] arr, int low, int high, Stats stats) {
-        int pivot = arr[high];
-        int i = low;
-        for (int j = low; j < high; j++) {
-            stats.comparisons++;//data for quickselect
-            if (arr[j] <= pivot) {
-                swap(arr, i, j, stats);
-                i++;
-            }
+        // Determine which side of the split contains the target index k
+        if (k <= pIndex) {
+            return quickSelect(arr, low, pIndex, k, strategy, stats);
+        } 
+        else {
+            return quickSelect(arr, pIndex + 1, high, k, strategy, stats);
         }
-        swap(arr, i, high, stats);
-        return i;
     }
 
+    //Moves pointers i and j toward each other
+    private int partition(int[] arr, int low, int high, PivotStrategy strategy, Stats stats) {
+        // Median3 pivot
+        if (strategy == PivotStrategy.MEDIAN3) {
+            int mid = low + (high - low) / 2;
+            if (arr[low] > arr[mid]) swap(arr, low, mid, stats);
+            if (arr[low] > arr[high]) swap(arr, low, high, stats);
+            if (arr[mid] > arr[high]) swap(arr, mid, high, stats);
+            swap(arr, low, mid, stats);
+        }
+        // Random pivot
+        else if (strategy == PivotStrategy.RANDOM) {
+            int r = low + (int)(Math.random() * (high - low + 1));
+            swap(arr, low, r, stats);
+        }
+
+        //First pivot
+        int pivot = arr[low];
+        int i = low - 1;
+        int j = high + 1;
+
+        while (true) {
+            // Move i right until an element >= pivot is found
+            do {
+                i++;
+                stats.comparisons++;
+            } while (arr[i] < pivot);
+            // Move j left until an element <= pivot is found
+            do {
+                j--;
+                stats.comparisons++;
+            } while (arr[j] > pivot);
+
+            if (i >= j) return j;
+            swap(arr, i, j, stats);
+        }
+    }
+
+    //swap two elements and increment the swap counter for stats
     private void swap(int[] arr, int i, int j, Stats stats) {
         if (i != j) {
             stats.swaps++;//data for quickselect

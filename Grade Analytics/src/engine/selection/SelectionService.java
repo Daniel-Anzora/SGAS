@@ -1,5 +1,5 @@
 package engine.selection;
-import engine.data.DataSet;
+import engine.data.Dataset;
 
 public class SelectionService {
     //two selectors to compare data
@@ -10,14 +10,19 @@ public class SelectionService {
         Stats sortStats = new Stats();
         Stats quickStats = new Stats();
         
-        //RUNS THE BASELINE: Full Sort or Merge Sort
-        //clones the dataset so the sort doesn't affect the quickselect run
-        int sortResult = sort.select(ds.scores.clone(), req.toIndex0(ds.scores.length), sortStats);
+        // Convert k to 0-based index
+        int kIndex = req.toIndex0(ds.scores.length);
+        int finalResult = -1;
 
-        //RUNS THE IMPROVED: Quickselect
-        int quickResult = quick.select(ds.scores.clone(), req.toIndex0(ds.scores.length), req.pivot, quickStats);
+        //alt1: run Sort if MethodChoice is SORT or BOTH
+        if (req.method == MethodChoice.SORT || req.method == MethodChoice.BOTH) {
+            finalResult = sort.select(ds.scores.clone(), kIndex, sortStats);
+        }
+        //alt2: run Quickselect if MethodChoice is QUICKSELECT or BOTH
+        if (req.method == MethodChoice.QUICKSELECT || req.method == MethodChoice.BOTH) {
+            finalResult = quick.select(ds.scores.clone(), kIndex, req.pivot, quickStats);
+        }
 
-        //RETURNS BOTH: The SelectionResult now holds the data for experiment
-        return new SelectionResult(quickResult, sortStats, quickStats);
+        return new SelectionResult(finalResult, sortStats, quickStats);
     }
 }
