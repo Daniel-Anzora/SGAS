@@ -6,13 +6,19 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
+import java.util.List;
+import java.util.ArrayList;
 //imports Backend data and selection class
-import data.Dataset;
-import selection.SelectionRequest;
-import selection.SelectionResult;
-import selection.SelectionMode;
-import selection.MethodChoice;
-import selection.PivotStrategy;
+import engine.data.Dataset;
+import engine.selection.SelectionRequest;
+import engine.selection.SelectionResult;
+import engine.selection.SelectionMode;
+import engine.selection.MethodChoice;
+import engine.selection.PivotStrategy;
+import engine.data.DatasetType;
+import engine.experiments.BatchRequest;
+import engine.experiments.BatchSummary;
+
 
 public class MainFrame extends JFrame{
 		//attributes
@@ -22,6 +28,10 @@ public class MainFrame extends JFrame{
 		private JTextArea outputArea;
 		//stores dataset currently loaded from csv file 
 		private Dataset currentDataset;
+        private JTextField batchSizesField;
+        private JTextField batchRepeatsField;
+        private JTextField batchSeedField;
+        private JComboBox<DatasetType> datasetTypeCombo;
 		
 		/*
 		 * Constructor sets up the UI layout
@@ -30,8 +40,8 @@ public class MainFrame extends JFrame{
 		 * Sets up the window, title, size, etc
 		 * Sets BorderLayout like North, Center regions, etc
 		 * */
-		public MainFrame() {
-			controller = new AppController();
+		public MainFrame(AppController controller) {
+			this.controller = controller;
 			setTitle("Student Grade Analytics");
 			setSize(600,400);
 			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -57,6 +67,32 @@ public class MainFrame extends JFrame{
 			JButton runButton = new JButton("Run Selection");
 			inputPanel.add(runButton);
 			add(inputPanel, BorderLayout.NORTH);
+            /* 
+             * Batch panel contains user input controls and text fields
+             * Holds the label, text field, and run  button
+             * It is added to the top(North) of the window
+             * runBatchButton is connect to ActionListener so it
+             * calls runBatchExperiment() to execute the batch experiment
+             */
+            JPanel batchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            batchPanel.add(new JLabel("Sizes (comma-separated):"));
+            batchSizesField = new JTextField(18);
+            inputPanel.add(batchPanel);
+            batchSizesField.setText("100,200,300,400,500");
+            inputPanel.add(batchSizesField);
+            inputPanel.add(new JLabel("Repeats:"));
+            batchRepeatsField = new JTextField(4);
+            inputPanel.add(batchRepeatsField);
+            inputPanel.add(new JLabel("Seed:"));
+            batchSeedField = new JTextField(6);
+            inputPanel.add(batchSeedField);
+            inputPanel.add(new JLabel("Data type:"));
+            datasetTypeCombo = new JComboBox<>(DatasetType.values());
+            inputPanel.add(datasetTypeCombo);
+            JButton runBatchButton = new JButton("Run Batch");
+            inputPanel.add(runBatchButton);
+            runBatchButton.addActionListener(e -> runBatchExperiment());
+            add(inputPanel, BorderLayout.NORTH);
 			//Set to read-only
 			outputArea = new JTextArea();
 			outputArea.setEditable(false);//prevents user input
@@ -142,6 +178,84 @@ public class MainFrame extends JFrame{
 	            JOptionPane.showMessageDialog(this, "Error running selection.");
 	        }
 	    }
+
+        private void runBatchExperiment() {
+            final int[] sizes;
+            final int repeats;
+            final long seed;
+            final int k;
+            try {
+                sizes = parseSizes(batchSizesField.getText());
+                repeats = Integer.parseInt(batchRepeatsField.getText().trim());
+                seed = Long.parseLong(batchSeedField.getText().trim());
+                k = Integer.parseInt(kField.getText().trim());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                        this, "Check sizes (comma-separated integers), repeats, seed, and k.");
+                return;
+            }
+    
+            DatasetType type = (DatasetType) datasetTypeCombo.getSelectedItem();
+            SelectionRequest selectionReq =
+                    new SelectionRequest(
+                            SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k);
+    
+            final BatchRequest batchReq = new BatchRequest(sizes, repeats, type, seed, selectionReq);
+    
+            outputArea.append("Running batch experiment…\n");
+            SwingWorker<BatchSummary, Void> worker =
+                    new SwingWorker<>() {
+                        @Override
+                        protected BatchSummary doInBackground() {
+                            return controller.runBatch(batchReq);
+                        }
+    
+                        @Override
+                        protected void done() {
+                            try {
+                                BatchSummary summary = get();
+                                File f = new File(summary.csvPath).getAbsoluteFile();
+                                outputArea.append("Saved results to " + f.getAbsolutePath() + "\n");
+                                int open =
+                                        JOptionPane.showConfirmDialog(
+                                                MainFrame.this,
+                                                "Open folder containing results?",
+                                                "Batch complete",
+                                                JOptionPane.YES_NO_OPTION);
+                                if (open == JOptionPane.YES_OPTION
+                                        && f.getParentFile() != null
+                                        && Desktop.isDesktopSupported()
+                                        && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                                    Desktop.getDesktop().open(f.getParentFile());
+                                }
+                            } catch (Exception ex) {
+                                Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                                JOptionPane.showMessageDialog(
+                                        MainFrame.this,
+                                        "Batch failed: " + cause.getMessage(),
+                                        "Error",
+                                        JOptionPane.ERROR_MESSAGE);
+                            }
+                        }
+                    };
+            worker.execute();
+        }
+    
+        private static int[] parseSizes(String text) {
+            String[] parts = text.split(",");
+            List<Integer> list = new ArrayList<>();
+            for (String p : parts) {
+                String t = p.trim();
+                if (t.isEmpty()) {
+                    continue;
+                }
+                list.add(Integer.parseInt(t));
+            }
+            if (list.isEmpty()) {
+                throw new NumberFormatException("no sizes");
+            }
+            return list.stream().mapToInt(i -> i).toArray();
+        }
 	    //Shows windows by calling setVisible
 	    public void showUI() {
 	        setVisible(true);

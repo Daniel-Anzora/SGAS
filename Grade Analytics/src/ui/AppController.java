@@ -2,13 +2,15 @@
 package ui;
 
 //imports classes from Backend packages(data, selection, and experiments)
-import data.DataService;
-import data.Dataset;
-import data.DatasetType;
-import selection.SelectionRequest;
-import selection.SelectionResult;
-import selection.SelectionService;
-import experiments.ExperimentService;
+import engine.data.DataService;
+import engine.data.Dataset;
+import engine.data.DatasetType;
+import engine.selection.SelectionRequest;
+import engine.selection.SelectionResult;
+import engine.selection.SelectionService;
+import engine.experiments.ExperimentService;
+import engine.experiments.BatchRequest;
+import engine.experiments.BatchSummary;
 
 public class AppController {
 		//Service attributes
@@ -20,7 +22,7 @@ public class AppController {
 		public AppController() {
 			data = new DataService();
 			selection = new SelectionService();
-			experiments = new ExperimentService();
+			experiments = new ExperimentService(data, selection);
 		}
 		//methods:
 		//Runs SelectionResult
@@ -35,6 +37,9 @@ public class AppController {
 	    public Dataset generateDataset(DatasetType type, int size, long seed) {
 	        return data.generate(type, size, seed);
 	    }
+        public BatchSummary runBatch(BatchRequest req) {
+            return experiments.run(req);
+        }
 	    //Runs performance experiments comparing algorithms
 	    public ExperimentService getExperimentService() {
 	        return experiments;

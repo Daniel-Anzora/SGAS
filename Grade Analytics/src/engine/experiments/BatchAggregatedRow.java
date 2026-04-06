@@ -5,6 +5,7 @@ public final class BatchAggregatedRow
 {
 
     public final int size;
+    public final String datasetName;
     public final double avgSortTimeNanos;
     public final double avgSortComparisons;
     public final double avgSortSwaps;
@@ -14,6 +15,7 @@ public final class BatchAggregatedRow
 
     public BatchAggregatedRow(
             int size,
+            String datasetName,
             double avgSortTimeNanos,
             double avgSortComparisons,
             double avgSortSwaps,
@@ -23,6 +25,7 @@ public final class BatchAggregatedRow
     {
         this.size = size;
         this.avgSortTimeNanos = avgSortTimeNanos;
+        this.datasetName = datasetName;
         this.avgSortComparisons = avgSortComparisons;
         this.avgSortSwaps = avgSortSwaps;
         this.avgQuickTimeNanos = avgQuickTimeNanos;

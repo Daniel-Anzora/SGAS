@@ -26,14 +26,15 @@ public final class CsvExporter
         {
             // csv header
             writer.println(
-                    "size,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,"
+                    "size,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,"
                             + "avgQuickTimeNanos,avgQuickComparisons,avgQuickSwaps");
             for (BatchAggregatedRow row : rows) 
             {
                 writer.printf(
                         java.util.Locale.US,
-                        "%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
+                        "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
                         row.size,
+                        row.datasetName,
                         row.avgSortTimeNanos,
                         row.avgSortComparisons,
                         row.avgSortSwaps,

@@ -67,6 +67,7 @@ public class ExperimentService {
             rows.add(
                     new BatchAggregatedRow(
                             size,
+                            ds.getName(),
                             sumSortTime / d,
                             sumSortComp / d,
                             sumSortSwap / d,
@@ -75,13 +76,15 @@ public class ExperimentService {
                             sumQuickSwap / d));
         }
 
+        String csvPath = null;
         try 
         {
-            CsvExporter.export(rows, DEFAULT_CSV_PATH);
+            csvPath = DEFAULT_CSV_PATH + "_" + req.datasetType.name() + "_" + req.repeats + "_" + req.seed + ".csv";
+            CsvExporter.export(rows, csvPath);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to export batch CSV", e);
         }
-        return new BatchSummary(DEFAULT_CSV_PATH);
+        return new BatchSummary(csvPath);
     }
 
     // check batch request fields
