@@ -11,6 +11,8 @@ import engine.selection.SelectionRequest;
 import engine.selection.SelectionResult;
 
 import javax.swing.*;
+//Used to restrict the file chooser to only select csv files
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
