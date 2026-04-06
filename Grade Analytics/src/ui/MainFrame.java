@@ -1,208 +1,149 @@
 package ui;
 
-import engine.data.Dataset;
-import engine.data.DatasetType;
-import engine.experiments.BatchRequest;
-import engine.experiments.BatchSummary;
-import engine.selection.MethodChoice;
-import engine.selection.PivotStrategy;
-import engine.selection.SelectionMode;
-import engine.selection.SelectionRequest;
-import engine.selection.SelectionResult;
-
+//Swing libraries used for UI components
 import javax.swing.*;
 //Used to restrict the file chooser to only select csv files
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+//imports Backend data and selection class
+import data.Dataset;
+import selection.SelectionRequest;
+import selection.SelectionResult;
+import selection.SelectionMode;
+import selection.MethodChoice;
+import selection.PivotStrategy;
 
-public class MainFrame extends JFrame {
+public class MainFrame extends JFrame{
+		//attributes
+		private AppController controller;
+		//input(k value) and output(where results will be printed)
+		private JTextField kField;
+		private JTextArea outputArea;
+		//stores dataset currently loaded from csv file 
+		private Dataset currentDataset;
+		
+		/*
+		 * Constructor sets up the UI layout
+		 * handles all backend operations like
+		 * generating datasets and running selection algorithms
+		 * Sets up the window, title, size, etc
+		 * Sets BorderLayout like North, Center regions, etc
+		 * */
+		public MainFrame() {
+			controller = new AppController();
+			setTitle("Student Grade Analytics");
+			setSize(600,400);
+			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			setLayout(new BorderLayout());
+			//centers the window on the screen
+			setLocationRelativeTo(null);
+			
+			/*
+			 * inputPanel contains user input controls and text fields
+			 * Holds the label, text field, and run  button
+			 * It is added to the top(North) of the window
+			 * runButton is connect to ActionListener so it
+			 * calls runSelection() to execute the algorithm
+			 */
+			JPanel inputPanel = new JPanel();
+			// Button used to load a CSV file
+			JButton loadButton = new JButton("Load CSV");
+			// Add the button to the input panel
+			inputPanel.add(loadButton);
+			inputPanel.add(new JLabel("k:"));
+			kField = new JTextField(5);
+			inputPanel.add(kField);
+			JButton runButton = new JButton("Run Selection");
+			inputPanel.add(runButton);
+			add(inputPanel, BorderLayout.NORTH);
+			//Set to read-only
+			outputArea = new JTextArea();
+			outputArea.setEditable(false);//prevents user input
+			outputArea.setLineWrap(true);
+			outputArea.setWrapStyleWord(true);
+			//JScrollPane allows scrolling if text gets long
+			add(new JScrollPane(outputArea), BorderLayout.CENTER);
+			//calls loadCsvFile when Load CSV button is clicked
+			loadButton.addActionListener(e -> loadCsvFile());
+			runButton.addActionListener(e -> runSelection());
+		}
+	    /*
+	     * Opens file chooser and loads CSV file only.
+	     * loads dataset into currentDataset.
+	     */
+	    private void loadCsvFile() {
+	        try {
+	            JFileChooser chooser = new JFileChooser();
+	            //Restricts selection to CSV files only
+	            FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV Files (*.csv)", "csv");
+	            chooser.setFileFilter(filter);
+	            //Disables the "All Files" options
+	            chooser.setAcceptAllFileFilterUsed(false);
+	            int result = chooser.showOpenDialog(this);
+	            //Checks if user selected a file and clicked "Open"
+	            if (result == JFileChooser.APPROVE_OPTION) {
+	                File selectedFile = chooser.getSelectedFile();
+	                //Displays error message if file is not a CSV
+	                if (!selectedFile.getName().toLowerCase().endsWith(".csv")) {
+	                    JOptionPane.showMessageDialog(this, "Please select a CSV file only.");
+	                    return;
+	                }
+	                //Loads dataset using controller and stores to currentDataset
+	                currentDataset = controller.loadDataset(selectedFile.getAbsolutePath());
+	                //Displays confirmation message in the output area
+	                outputArea.setText("CSV file loaded successfully.\n");
+	            }
 
-    private final AppController controller;
-
-    private JTextField kField;
-    private Dataset currentDataset;
-
-    private JTextArea outputArea;
-
-    private JTextField batchSizesField;
-    private JTextField batchRepeatsField;
-    private JTextField batchSeedField;
-    private JComboBox<DatasetType> datasetTypeCombo;
-
-    public MainFrame(AppController controller) {
-        this.controller = controller;
-        setTitle("Student Grade Analytics");
-        setSize(720, 480);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
-
-        JPanel north = new JPanel();
-        north.setLayout(new BoxLayout(north, BoxLayout.Y_AXIS));
-
-        JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
-        JButton loadCSVButton = new JButton("Load CSV");
-        inputPanel.add(loadCSVButton);
-
-        loadCSVButton.addActionListener(e -> {
-            JFileChooser chooser = new JFileChooser();
-            int result = chooser.showOpenDialog(this);
-            if (result == JFileChooser.APPROVE_OPTION) {
-                String path = chooser.getSelectedFile().getAbsolutePath();
-                Dataset ds = controller.loadDataset(path);
-                currentDataset = ds;
-                outputArea.append("Loaded CSV dataset: " + ds.getName() + "\n");
-            }
-        });
-
-        inputPanel.add(new JLabel("k:"));
-        kField = new JTextField(5);
-        kField.setText("1");
-        inputPanel.add(kField);
-
-        JButton runButton = new JButton("Run Selection");
-        inputPanel.add(runButton);
-        runButton.addActionListener(e -> runSelection());
-
-        north.add(inputPanel);
-
-        JPanel batchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        batchPanel.add(new JLabel("Sizes (comma-separated):"));
-        batchSizesField = new JTextField(18);
-        batchSizesField.setText("100,200,300,400,500");
-        batchPanel.add(batchSizesField);
-
-        batchPanel.add(new JLabel("Repeats:"));
-        batchRepeatsField = new JTextField(4);
-        batchRepeatsField.setText("5");
-        batchPanel.add(batchRepeatsField);
-
-        batchPanel.add(new JLabel("Seed:"));
-        batchSeedField = new JTextField(6);
-        batchSeedField.setText("42");
-        batchPanel.add(batchSeedField);
-
-        batchPanel.add(new JLabel("Data type:"));
-        datasetTypeCombo = new JComboBox<>(DatasetType.values());
-        datasetTypeCombo.setSelectedItem(DatasetType.RANDOM);
-        batchPanel.add(datasetTypeCombo);
-
-        JButton runBatchButton = new JButton("Run Batch");
-        batchPanel.add(runBatchButton);
-        runBatchButton.addActionListener(e -> runBatchExperiment());
-
-        north.add(batchPanel);
-
-        add(north, BorderLayout.NORTH);
-        outputArea = new JTextArea();
-        add(new JScrollPane(outputArea), BorderLayout.CENTER);
-    }
-
-    private void runSelection() {
-        try {
-            int k = Integer.parseInt(kField.getText().trim());
-
-            Dataset ds;
-            if (currentDataset != null) {
-                ds = currentDataset;
-            } else {
-                ds = controller.generateDataset(DatasetType.RANDOM, 100, 42);
-            }
-            SelectionRequest req =
-                    new SelectionRequest(
-                            SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k);
-            SelectionResult result = controller.runSelection(req, ds);
-            outputArea.append("Value: " + result.getValue() + "\n");
-            outputArea.append("Sort Time: " + result.getSortStats().timeNanos + "\n");
-            outputArea.append("Quick Time: " + result.getQuickStats().timeNanos + "\n");
-
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Invalid input");
-        }
-    }
-
-    private void runBatchExperiment() {
-        final int[] sizes;
-        final int repeats;
-        final long seed;
-        final int k;
-        try {
-            sizes = parseSizes(batchSizesField.getText());
-            repeats = Integer.parseInt(batchRepeatsField.getText().trim());
-            seed = Long.parseLong(batchSeedField.getText().trim());
-            k = Integer.parseInt(kField.getText().trim());
-        } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(
-                    this, "Check sizes (comma-separated integers), repeats, seed, and k.");
-            return;
-        }
-
-        DatasetType type = (DatasetType) datasetTypeCombo.getSelectedItem();
-        SelectionRequest selectionReq =
-                new SelectionRequest(
-                        SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k);
-
-        final BatchRequest batchReq = new BatchRequest(sizes, repeats, type, seed, selectionReq);
-
-        outputArea.append("Running batch experiment…\n");
-        SwingWorker<BatchSummary, Void> worker =
-                new SwingWorker<>() {
-                    @Override
-                    protected BatchSummary doInBackground() {
-                        return controller.runBatch(batchReq);
-                    }
-
-                    @Override
-                    protected void done() {
-                        try {
-                            BatchSummary summary = get();
-                            File f = new File(summary.csvPath).getAbsoluteFile();
-                            outputArea.append("Saved results to " + f.getAbsolutePath() + "\n");
-                            int open =
-                                    JOptionPane.showConfirmDialog(
-                                            MainFrame.this,
-                                            "Open folder containing results?",
-                                            "Batch complete",
-                                            JOptionPane.YES_NO_OPTION);
-                            if (open == JOptionPane.YES_OPTION
-                                    && f.getParentFile() != null
-                                    && Desktop.isDesktopSupported()
-                                    && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                                Desktop.getDesktop().open(f.getParentFile());
-                            }
-                        } catch (Exception ex) {
-                            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-                            JOptionPane.showMessageDialog(
-                                    MainFrame.this,
-                                    "Batch failed: " + cause.getMessage(),
-                                    "Error",
-                                    JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
-                };
-        worker.execute();
-    }
-
-    private static int[] parseSizes(String text) {
-        String[] parts = text.split(",");
-        List<Integer> list = new ArrayList<>();
-        for (String p : parts) {
-            String t = p.trim();
-            if (t.isEmpty()) {
-                continue;
-            }
-            list.add(Integer.parseInt(t));
-        }
-        if (list.isEmpty()) {
-            throw new NumberFormatException("no sizes");
-        }
-        return list.stream().mapToInt(i -> i).toArray();
-    }
-
-    public void open() {
-        setVisible(true);
-    }
+	        } catch (Exception ex) {
+	        	//Handles errors during file selection/loading
+	            JOptionPane.showMessageDialog(this, "Error loading CSV file.");
+	        }
+	    }
+	    /*
+	     * Reads the user's k input, sends the request through the controller,
+	     * and displays the result and timing stats.
+	     */
+	    private void runSelection() {
+	        try {
+	            //Prevents running if no CSV dataset has been loaded
+	            if (currentDataset == null) {
+	                JOptionPane.showMessageDialog(this, "Please load a CSV file first.");
+	                return;
+	            }
+	            //Parse the k value entered
+	            int k = Integer.parseInt(kField.getText());
+	            /*
+	             * Creates a selection request specifying:
+	             * selection type
+	             * method choice
+	             * pivot strategy
+	             * k value
+	             */
+	            SelectionRequest req = new SelectionRequest(
+	                    SelectionMode.KTH,
+	                    MethodChoice.BOTH,
+	                    PivotStrategy.MEDIAN3,
+	                    k
+	            );
+	            //Calls the controller to execute the selection algorithm
+	            SelectionResult result = controller.runSelection(req, currentDataset);
+	            //Displays results and performance stats
+	            outputArea.setText("");
+	            outputArea.append("Selection completed successfully.\n\n");
+	            outputArea.append("Value: " + result.getValue() + "\n");
+	            outputArea.append("Sort Time: " + result.getSortStats().timeNanos + "ns\n");
+	            outputArea.append("Quick Time: " + result.getQuickStats().timeNanos + "ns\n");
+	        } catch (NumberFormatException ex) {
+	        	//Handles invalid numeric input for k
+	            JOptionPane.showMessageDialog(this, "Please enter a valid integer for k.");
+	        } catch (Exception ex) {
+	        	//Handles errors during execution
+	            JOptionPane.showMessageDialog(this, "Error running selection.");
+	        }
+	    }
+	    //Shows windows by calling setVisible
+	    public void showUI() {
+	        setVisible(true);
+	    }
 }
