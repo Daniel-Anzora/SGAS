@@ -24,7 +24,7 @@ public class MainFrame extends JFrame{
 		//attributes
 		private AppController controller;
 		//input(k value) and output(where results will be printed)
-		private JTextField kField;
+		private JTextField valueField;
 		private JTextArea outputArea;
 		//stores dataset currently loaded from csv file 
 		private Dataset currentDataset;
@@ -32,6 +32,7 @@ public class MainFrame extends JFrame{
         private JTextField batchRepeatsField;
         private JTextField batchSeedField;
         private JComboBox<DatasetType> datasetTypeCombo;
+		private JComboBox<SelectionMode> selectionModeCombo;
 		
 		/*
 		 * Constructor sets up the UI layout
@@ -43,7 +44,7 @@ public class MainFrame extends JFrame{
 		public MainFrame(AppController controller) {
 			this.controller = controller;
 			setTitle("Student Grade Analytics");
-			setSize(600,400);
+			setSize(850,400);
 			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			setLayout(new BorderLayout());
 			//centers the window on the screen
@@ -61,9 +62,11 @@ public class MainFrame extends JFrame{
 			JButton loadButton = new JButton("Load CSV");
 			// Add the button to the input panel
 			inputPanel.add(loadButton);
-			inputPanel.add(new JLabel("k:"));
-			kField = new JTextField(5);
-			inputPanel.add(kField);
+			inputPanel.add(new JLabel("Selection Mode:"));
+			selectionModeCombo = new JComboBox<>(SelectionMode.values());
+			inputPanel.add(selectionModeCombo);
+			valueField = new JTextField(5);
+			inputPanel.add(valueField);
 			JButton runButton = new JButton("Run Selection");
 			inputPanel.add(runButton);
 			add(inputPanel, BorderLayout.NORTH);
@@ -148,31 +151,38 @@ public class MainFrame extends JFrame{
 	                return;
 	            }
 	            //Parse the k value entered
-	            int k = Integer.parseInt(kField.getText());
-	            /*
-	             * Creates a selection request specifying:
-	             * selection type
-	             * method choice
-	             * pivot strategy
-	             * k value
-	             */
-	            SelectionRequest req = new SelectionRequest(
-	                    SelectionMode.KTH,
-	                    MethodChoice.BOTH,
-	                    PivotStrategy.MEDIAN3,
-	                    k
-	            );
+	            SelectionMode mode = (SelectionMode) selectionModeCombo.getSelectedItem();
+				MethodChoice method = MethodChoice.BOTH;
+				PivotStrategy pivot = PivotStrategy.MEDIAN3;
+
+				SelectionRequest req;
+				switch (mode) {
+					case KTH:
+						int k = Integer.parseInt(valueField.getText().trim());
+						req = new SelectionRequest(k, method, pivot);
+						break;
+					case PERCENTILE:
+						double p = Double.parseDouble(valueField.getText().trim());
+						req = new SelectionRequest(p, method, pivot);
+						break;
+					case MEDIAN: 
+						req = new SelectionRequest(method, pivot);
+						break;
+					default:
+							throw new IllegalStateException("Unexpected mode: " + mode);
+				}
 	            //Calls the controller to execute the selection algorithm
 	            SelectionResult result = controller.runSelection(req, currentDataset);
 	            //Displays results and performance stats
 	            outputArea.setText("");
 	            outputArea.append("Selection completed successfully.\n\n");
+				outputArea.append("Mode: " + mode + "\n");
 	            outputArea.append("Value: " + result.getValue() + "\n");
 	            outputArea.append("Sort Time: " + result.getSortStats().timeNanos + "ns\n");
 	            outputArea.append("Quick Time: " + result.getQuickStats().timeNanos + "ns\n");
 	        } catch (NumberFormatException ex) {
 	        	//Handles invalid numeric input for k
-	            JOptionPane.showMessageDialog(this, "Please enter a valid integer for k.");
+	            JOptionPane.showMessageDialog(this, "Please enter a valid value for the selected mode.");
 	        } catch (Exception ex) {
 	        	//Handles errors during execution
 	            JOptionPane.showMessageDialog(this, "Error running selection.");
@@ -188,17 +198,17 @@ public class MainFrame extends JFrame{
                 sizes = parseSizes(batchSizesField.getText());
                 repeats = Integer.parseInt(batchRepeatsField.getText().trim());
                 seed = Long.parseLong(batchSeedField.getText().trim());
-                k = Integer.parseInt(kField.getText().trim());
+                k = Integer.parseInt(valueField.getText().trim());
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(
-                        this, "Check sizes (comma-separated integers), repeats, seed, and k.");
+                        this, "Check sizes (comma-separated integers), repeats, seed, and value.");
                 return;
             }
     
             DatasetType type = (DatasetType) datasetTypeCombo.getSelectedItem();
             SelectionRequest selectionReq =
                     new SelectionRequest(
-                            SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k);
+                            SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k, 0.0);
     
             final BatchRequest batchReq = new BatchRequest(sizes, repeats, type, seed, selectionReq);
     
