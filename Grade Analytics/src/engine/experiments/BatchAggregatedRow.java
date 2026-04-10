@@ -1,32 +1,17 @@
 package engine.experiments;
 
-// one averaged row per dataset size for the batch csv
+// one simple row for csv export: label,value
 public final class BatchAggregatedRow 
 {
 
-    public final int size;
-    public final double avgSortTimeNanos;
-    public final double avgSortComparisons;
-    public final double avgSortSwaps;
-    public final double avgQuickTimeNanos;
-    public final double avgQuickComparisons;
-    public final double avgQuickSwaps;
+    public final String label;
+    public final int value;
 
     public BatchAggregatedRow(
-            int size,
-            double avgSortTimeNanos,
-            double avgSortComparisons,
-            double avgSortSwaps,
-            double avgQuickTimeNanos,
-            double avgQuickComparisons,
-            double avgQuickSwaps) 
+            String label,
+            int value) 
     {
-        this.size = size;
-        this.avgSortTimeNanos = avgSortTimeNanos;
-        this.avgSortComparisons = avgSortComparisons;
-        this.avgSortSwaps = avgSortSwaps;
-        this.avgQuickTimeNanos = avgQuickTimeNanos;
-        this.avgQuickComparisons = avgQuickComparisons;
-        this.avgQuickSwaps = avgQuickSwaps;
+        this.label = label;
+        this.value = value;
     }
 }

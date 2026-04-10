@@ -6,6 +6,7 @@ public class DataService {
 
 
     public static Dataset loadCsv(String path) {
+        List<String> names = new ArrayList<>();
         List<Integer> scores = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
             String line;
@@ -14,9 +15,11 @@ public class DataService {
                 
                 try {
                     if (!line.contains(",")) {
+                        names.add("Student" + (scores.size() + 1));
                         scores.add(Integer.parseInt(line));
                     } else {
                         String[] parts = line.split(",");
+                        names.add(parts[0].trim());
                         scores.add(Integer.parseInt(parts[1].trim()));
                         }
                     } catch (NumberFormatException ignored) {}
@@ -27,7 +30,8 @@ public class DataService {
         }
 
         int[] arr = scores.stream().mapToInt(i -> i).toArray();
-        return new Dataset("CSV Dataset", arr);
+        String[] namesArr = names.toArray(new String[0]);
+        return new Dataset("CSV Dataset", arr, namesArr);
     }
 
     public Dataset generate(DatasetType type, int n, long seed) {

@@ -53,6 +53,7 @@ public class MainFrame extends JFrame {
                 Dataset ds = controller.loadDataset(path);
                 currentDataset = ds;
                 outputArea.append("Loaded CSV dataset: " + ds.getName() + "\n");
+                updateBatchControlsForDataset();
             }
         });
 
@@ -97,6 +98,7 @@ public class MainFrame extends JFrame {
         add(north, BorderLayout.NORTH);
         outputArea = new JTextArea();
         add(new JScrollPane(outputArea), BorderLayout.CENTER);
+        updateBatchControlsForDataset();
     }
 
     private void runSelection() {
@@ -113,9 +115,30 @@ public class MainFrame extends JFrame {
                     new SelectionRequest(
                             SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k);
             SelectionResult result = controller.runSelection(req, ds);
-            outputArea.append("Value: " + result.getValue() + "\n");
-            outputArea.append("Sort Time: " + result.getSortStats().timeNanos + "\n");
-            outputArea.append("Quick Time: " + result.getQuickStats().timeNanos + "\n");
+            int val  = result.getValue();
+            outputArea.append("Value: " + val + "\n");
+
+            if (currentDataset != null && currentDataset.getStudentNames() != null)
+            {
+                String[] names = currentDataset.getStudentNames();
+                for (int i = 0; i < currentDataset.getScores().length; i++)
+                {
+                    if (currentDataset.getScores()[i] == val)
+                    {
+                        outputArea.append("Student: " + names[i] + " - Grade: " + val + "\n");
+                        break;
+                    }
+                }
+            }
+
+            if (result.getSortStats() != null)
+            {
+                outputArea.append("Sort Time: " + result.getSortStats().timeNanos + "\n");
+            }
+            if (result.getQuickStats() != null)
+            {
+                outputArea.append("Quick Time: " + result.getQuickStats().timeNanos + "\n");
+            }
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Invalid input");
@@ -143,7 +166,18 @@ public class MainFrame extends JFrame {
                 new SelectionRequest(
                         SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k);
 
-        final BatchRequest batchReq = new BatchRequest(sizes, repeats, type, seed, selectionReq);
+        JFileChooser saveChooser = new JFileChooser();
+        saveChooser.setDialogTitle("Save batch CSV");
+        saveChooser.setSelectedFile(new File("results.csv"));
+        int saveResult = saveChooser.showSaveDialog(this);
+        if (saveResult != JFileChooser.APPROVE_OPTION) {
+            outputArea.append("Batch export canceled.\n");
+            return;
+        }
+
+        String outputPath = saveChooser.getSelectedFile().getAbsolutePath();
+        final BatchRequest batchReq =
+                new BatchRequest(sizes, repeats, type, seed, outputPath, currentDataset, selectionReq);
 
         outputArea.append("Running batch experiment…\n");
         SwingWorker<BatchSummary, Void> worker =
@@ -198,6 +232,18 @@ public class MainFrame extends JFrame {
             throw new NumberFormatException("no sizes");
         }
         return list.stream().mapToInt(i -> i).toArray();
+    }
+
+    // if a csv dataset is loaded, batch export uses name,grade rows from that dataset
+    private void updateBatchControlsForDataset() {
+        boolean usingLoadedDataset = currentDataset != null;
+        batchSizesField.setEnabled(!usingLoadedDataset);
+        batchRepeatsField.setEnabled(!usingLoadedDataset);
+        batchSeedField.setEnabled(!usingLoadedDataset);
+        datasetTypeCombo.setEnabled(!usingLoadedDataset);
+        if (usingLoadedDataset) {
+            outputArea.append("Batch settings disabled while using loaded CSV names.\n");
+        }
     }
 
     public void open() {

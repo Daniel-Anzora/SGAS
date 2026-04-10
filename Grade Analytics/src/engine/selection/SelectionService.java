@@ -7,17 +7,20 @@ public class SelectionService {
     private QuickselectSelector quick = new QuickselectSelector(); 
 
     public SelectionResult run(SelectionRequest req, Dataset ds) {
-        Stats sortStats = new Stats();
-        Stats quickStats = new Stats();
-        
-        //RUNS THE BASELINE: Full Sort or Merge Sort
-        //clones the dataset so the sort doesn't affect the quickselect run
-        int sortResult = sort.select(ds.scores.clone(), req.toIndex0(ds.scores.length), sortStats);
+        Stats sortStats = null;
+        Stats quickStats = null;
+        int result = 0;
 
-        //RUNS THE IMPROVED: Quickselect
-        int quickResult = quick.select(ds.scores.clone(), req.toIndex0(ds.scores.length), req.pivot, quickStats);
-
-        //RETURNS BOTH: The SelectionResult now holds the data for experiment
-        return new SelectionResult(quickResult, sortStats, quickStats);
+        if (req.method == MethodChoice.SORT || req.method == MethodChoice.BOTH)
+        {
+            sortStats = new Stats();
+            result = sort.select(ds.scores.clone(), req.toIndex0(ds.scores.length), sortStats);
+        }
+        if (req.method == MethodChoice.QUICKSELECT || req.method == MethodChoice.BOTH)
+        {
+            quickStats = new Stats();
+            result = quick.select(ds.scores.clone(), req.toIndex0(ds.scores.length), req.pivot, quickStats);
+        }
+        return new SelectionResult(result, sortStats, quickStats);
     }
 }

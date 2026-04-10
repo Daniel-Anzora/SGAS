@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-// writes batch experiment rows to csv (for graphs)
+// writes simple label,value csv rows
 public final class CsvExporter 
 {
 
@@ -24,22 +24,13 @@ public final class CsvExporter
         }
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8))) 
         {
-            // csv header
-            writer.println(
-                    "size,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,"
-                            + "avgQuickTimeNanos,avgQuickComparisons,avgQuickSwaps");
             for (BatchAggregatedRow row : rows) 
             {
                 writer.printf(
                         java.util.Locale.US,
-                        "%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
-                        row.size,
-                        row.avgSortTimeNanos,
-                        row.avgSortComparisons,
-                        row.avgSortSwaps,
-                        row.avgQuickTimeNanos,
-                        row.avgQuickComparisons,
-                        row.avgQuickSwaps);
+                        "%s,%d%n",
+                        row.label,
+                        row.value);
             }
         }
         return outPath;
