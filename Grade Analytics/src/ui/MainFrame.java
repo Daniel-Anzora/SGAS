@@ -12,6 +12,7 @@ import engine.selection.SelectionRequest;
 import engine.selection.SelectionResult;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
@@ -21,15 +22,15 @@ public class MainFrame extends JFrame {
 
     private final AppController controller;
 
-    private JTextField kField;
-    private Dataset currentDataset;
-
+    private JTextField valueField;
     private JTextArea outputArea;
+    private Dataset currentDataset;
 
     private JTextField batchSizesField;
     private JTextField batchRepeatsField;
     private JTextField batchSeedField;
     private JComboBox<DatasetType> datasetTypeCombo;
+    private JComboBox<SelectionMode> selectionModeCombo;
 
     private JTextArea manualInputArea;
     private Dataset manualDataset;
@@ -37,46 +38,31 @@ public class MainFrame extends JFrame {
     public MainFrame(AppController controller) {
         this.controller = controller;
         setTitle("Student Grade Analytics");
-        setSize(720, 480);
+        setSize(900, 520);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        setLocationRelativeTo(null);
 
         JPanel north = new JPanel();
         north.setLayout(new BoxLayout(north, BoxLayout.Y_AXIS));
 
         JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
-        JButton loadCSVButton = new JButton("Load CSV");
-        inputPanel.add(loadCSVButton);
-
-        loadCSVButton.addActionListener(e -> {
-            JFileChooser chooser = new JFileChooser();
-            int result = chooser.showOpenDialog(this);
-            if (result == JFileChooser.APPROVE_OPTION) {
-                String path = chooser.getSelectedFile().getAbsolutePath();
-                Dataset ds = controller.loadDataset(path);
-                currentDataset = ds;
-                outputArea.append("Loaded CSV dataset: " + ds.getName() + "\n");
-                updateBatchControlsForDataset();
-            }
-        });
-
-        inputPanel.add(new JLabel("k:"));
-        kField = new JTextField(5);
-        kField.setText("1");
-        inputPanel.add(kField);
-
+        JButton loadButton = new JButton("Load CSV");
+        inputPanel.add(loadButton);
+        inputPanel.add(new JLabel("Selection Mode:"));
+        selectionModeCombo = new JComboBox<>(SelectionMode.values());
+        inputPanel.add(selectionModeCombo);
+        valueField = new JTextField(5);
+        inputPanel.add(valueField);
         JButton runButton = new JButton("Run Selection");
         inputPanel.add(runButton);
-        runButton.addActionListener(e -> runSelection());
-
         north.add(inputPanel);
 
         JPanel manualPanel = new JPanel(new BorderLayout());
-        manualPanel.setBorder(BorderFactory.createTitledBorder("Manual Entry (format: Name, Grade) "));
+        manualPanel.setBorder(
+                BorderFactory.createTitledBorder("Manual Entry (format: Name, Grade) "));
         manualInputArea = new JTextArea(4, 40);
         manualPanel.add(new JScrollPane(manualInputArea), BorderLayout.CENTER);
-
         JPanel manualButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton addEntriesButton = new JButton("Add Entries");
         JButton clearManualButton = new JButton("Clear manual");
@@ -84,57 +70,57 @@ public class MainFrame extends JFrame {
         manualButtons.add(clearManualButton);
         manualPanel.add(manualButtons, BorderLayout.SOUTH);
 
-        addEntriesButton.addActionListener(e -> {
-            String text = manualInputArea.getText().trim();
-            if (text.isEmpty())
-            {
-                JOptionPane.showMessageDialog(this, "No entries to add.");
-                return;
-            }
-            List<String> names = new ArrayList<>();
-            List<Integer> scores = new ArrayList<>();
-            for (String line : text.split("\\r?\\n|\\r"))
-            {
-                line = line.trim();
-                if (line.isEmpty()) continue;
-                String[] parts = line.split(",");
-                if (parts.length != 2)
-                {
-                    JOptionPane.showMessageDialog(this, "Invalid format: \"" + line + "\". Use Name, Grade.");
-                    return;
-                }
+        addEntriesButton.addActionListener(
+                e -> {
+                    String text = manualInputArea.getText().trim();
+                    if (text.isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "No entries to add.");
+                        return;
+                    }
+                    List<String> names = new ArrayList<>();
+                    List<Integer> scores = new ArrayList<>();
+                    for (String line : text.split("\\r?\\n|\\r")) {
+                        line = line.trim();
+                        if (line.isEmpty()) {
+                            continue;
+                        }
+                        String[] parts = line.split(",");
+                        if (parts.length != 2) {
+                            JOptionPane.showMessageDialog(
+                                    this,
+                                    "Invalid format: \"" + line + "\". Use Name, Grade.");
+                            return;
+                        }
+                        try {
+                            names.add(parts[0].trim());
+                            scores.add(Integer.parseInt(parts[1].trim()));
+                        } catch (NumberFormatException ex) {
+                            JOptionPane.showMessageDialog(
+                                    this, "Invalid grade in: \"" + line + "\"");
+                            return;
+                        }
+                    }
+                    int[] arr = scores.stream().mapToInt(i -> i).toArray();
+                    String[] nameArr = names.toArray(new String[0]);
+                    manualDataset = new Dataset("Manual", arr, nameArr);
 
-                try 
-                {
-                    names.add(parts[0].trim());
-                    scores.add(Integer.parseInt(parts[1].trim()));
-
-                } catch (NumberFormatException ex){
-                    JOptionPane.showMessageDialog(this, "Invalid grade in: \"" + line + "\"");
-                    return;
-                }
-            }
-            int[] arr = scores.stream().mapToInt(i -> i).toArray();
-            String[] nameArr = names.toArray(new String[0]);
-            manualDataset = new Dataset("Manual", arr, nameArr);
-
-            if (currentDataset != null) {
-                currentDataset =
-                        DataService.sortStudents(
-                                DataService.merge(currentDataset, manualDataset));
-                outputArea.append(
-                        "Merged manual entries into current dataset. Total: "
-                                + currentDataset.size()
-                                + " students.\n");
-            } else {
-                currentDataset = DataService.sortStudents(manualDataset);
-                outputArea.append(
-                        "Added manual entries. Total: "
-                                + currentDataset.size()
-                                + " students.\n");
-            }
-            updateBatchControlsForDataset();
-        });
+                    if (currentDataset != null) {
+                        currentDataset =
+                                DataService.sortStudents(
+                                        DataService.merge(currentDataset, manualDataset));
+                        outputArea.append(
+                                "Merged manual entries into current dataset. Total: "
+                                        + currentDataset.size()
+                                        + " students.\n");
+                    } else {
+                        currentDataset = DataService.sortStudents(manualDataset);
+                        outputArea.append(
+                                "Added manual entries. Total: "
+                                        + currentDataset.size()
+                                        + " students.\n");
+                    }
+                    updateBatchControlsForDataset();
+                });
 
         clearManualButton.addActionListener(
                 e -> {
@@ -150,75 +136,118 @@ public class MainFrame extends JFrame {
         batchSizesField = new JTextField(18);
         batchSizesField.setText("100,200,300,400,500");
         batchPanel.add(batchSizesField);
-
         batchPanel.add(new JLabel("Repeats:"));
         batchRepeatsField = new JTextField(4);
         batchRepeatsField.setText("5");
         batchPanel.add(batchRepeatsField);
-
         batchPanel.add(new JLabel("Seed:"));
         batchSeedField = new JTextField(6);
         batchSeedField.setText("42");
         batchPanel.add(batchSeedField);
-
         batchPanel.add(new JLabel("Data type:"));
         datasetTypeCombo = new JComboBox<>(DatasetType.values());
         datasetTypeCombo.setSelectedItem(DatasetType.RANDOM);
         batchPanel.add(datasetTypeCombo);
-
         JButton runBatchButton = new JButton("Run Batch");
         batchPanel.add(runBatchButton);
-        runBatchButton.addActionListener(e -> runBatchExperiment());
-
         north.add(batchPanel);
 
         add(north, BorderLayout.NORTH);
+
         outputArea = new JTextArea();
+        outputArea.setEditable(false);
+        outputArea.setLineWrap(true);
+        outputArea.setWrapStyleWord(true);
         add(new JScrollPane(outputArea), BorderLayout.CENTER);
+
+        loadButton.addActionListener(e -> loadCsvFile());
+        runButton.addActionListener(e -> runSelection());
+        runBatchButton.addActionListener(e -> runBatchExperiment());
+
         updateBatchControlsForDataset();
+    }
+
+    private void loadCsvFile() {
+        try {
+            JFileChooser chooser = new JFileChooser();
+            FileNameExtensionFilter filter =
+                    new FileNameExtensionFilter("CSV Files (*.csv)", "csv");
+            chooser.setFileFilter(filter);
+            chooser.setAcceptAllFileFilterUsed(false);
+            int result = chooser.showOpenDialog(this);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = chooser.getSelectedFile();
+                if (!selectedFile.getName().toLowerCase().endsWith(".csv")) {
+                    JOptionPane.showMessageDialog(this, "Please select a CSV file only.");
+                    return;
+                }
+                currentDataset = controller.loadDataset(selectedFile.getAbsolutePath());
+                outputArea.append(
+                        "CSV file loaded successfully: " + selectedFile.getName() + "\n");
+                updateBatchControlsForDataset();
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error loading CSV file.");
+        }
     }
 
     private void runSelection() {
         try {
-            int k = Integer.parseInt(kField.getText().trim());
-
-            Dataset ds;
-            if (currentDataset != null) {
-                ds = currentDataset;
-            } else {
-                ds = controller.generateDataset(DatasetType.RANDOM, 100, 42);
+            if (currentDataset == null) {
+                JOptionPane.showMessageDialog(this, "Please load a CSV file first.");
+                return;
             }
-            SelectionRequest req =
-                    new SelectionRequest(
-                            SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k);
-            SelectionResult result = controller.runSelection(req, ds);
-            int val  = result.getValue();
+            SelectionMode mode = (SelectionMode) selectionModeCombo.getSelectedItem();
+            MethodChoice method = MethodChoice.BOTH;
+            PivotStrategy pivot = PivotStrategy.MEDIAN3;
+
+            SelectionRequest req;
+            switch (mode) {
+                case KTH:
+                    int k = Integer.parseInt(valueField.getText().trim());
+                    req = new SelectionRequest(k, method, pivot);
+                    break;
+                case PERCENTILE:
+                    double p = Double.parseDouble(valueField.getText().trim());
+                    req = new SelectionRequest(p, method, pivot);
+                    break;
+                case MEDIAN:
+                    req = new SelectionRequest(method, pivot);
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected mode: " + mode);
+            }
+
+            SelectionResult result = controller.runSelection(req, currentDataset);
+            outputArea.setText("");
+            outputArea.append("Selection completed successfully.\n\n");
+            outputArea.append("Mode: " + mode + "\n");
+            int val = result.getValue();
             outputArea.append("Value: " + val + "\n");
 
-            if (currentDataset != null && currentDataset.getStudentNames() != null)
-            {
+            if (currentDataset.getStudentNames() != null) {
                 String[] names = currentDataset.getStudentNames();
-                for (int i = 0; i < currentDataset.getScores().length; i++)
-                {
-                    if (currentDataset.getScores()[i] == val)
-                    {
-                        outputArea.append("Student: " + names[i] + " - Grade: " + val + "\n");
+                int[] sc = currentDataset.getScores();
+                for (int i = 0; i < sc.length; i++) {
+                    if (sc[i] == val) {
+                        outputArea.append(
+                                "Student: " + names[i] + " - Grade: " + val + "\n");
                         break;
                     }
                 }
             }
 
-            if (result.getSortStats() != null)
-            {
-                outputArea.append("Sort Time: " + result.getSortStats().timeNanos + "\n");
+            if (result.getSortStats() != null) {
+                outputArea.append("Sort Time: " + result.getSortStats().timeNanos + "ns\n");
             }
-            if (result.getQuickStats() != null)
-            {
-                outputArea.append("Quick Time: " + result.getQuickStats().timeNanos + "\n");
+            if (result.getQuickStats() != null) {
+                outputArea.append("Quick Time: " + result.getQuickStats().timeNanos + "ns\n");
             }
-
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(
+                    this, "Please enter a valid value for the selected mode.");
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Invalid input");
+            JOptionPane.showMessageDialog(this, "Error running selection.");
         }
     }
 
@@ -231,17 +260,16 @@ public class MainFrame extends JFrame {
             sizes = parseSizes(batchSizesField.getText());
             repeats = Integer.parseInt(batchRepeatsField.getText().trim());
             seed = Long.parseLong(batchSeedField.getText().trim());
-            k = Integer.parseInt(kField.getText().trim());
+            k = Integer.parseInt(valueField.getText().trim());
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(
-                    this, "Check sizes (comma-separated integers), repeats, seed, and k.");
+                    this,
+                    "Check sizes (comma-separated integers), repeats, seed, and value (k).");
             return;
         }
 
         DatasetType type = (DatasetType) datasetTypeCombo.getSelectedItem();
-        SelectionRequest selectionReq =
-                new SelectionRequest(
-                        SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k);
+        SelectionRequest selectionReq = new SelectionRequest(k, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
 
         JFileChooser saveChooser = new JFileChooser();
         saveChooser.setDialogTitle("Save batch CSV");
@@ -317,7 +345,6 @@ public class MainFrame extends JFrame {
         return list.stream().mapToInt(i -> i).toArray();
     }
 
-    // Same idea as ExperimentService.hasNamedDataset: batch CSV lists each student name and grade.
     private static boolean isNamedDatasetForBatchExport(Dataset ds) {
         if (ds == null || ds.getStudentNames() == null || ds.getScores() == null) {
             return false;
@@ -327,7 +354,6 @@ public class MainFrame extends JFrame {
         return names.length == n && n > 0;
     }
 
-    // if a csv dataset is loaded, batch export uses name,grade rows from that dataset
     private void updateBatchControlsForDataset() {
         boolean usingLoadedDataset = currentDataset != null;
         batchSizesField.setEnabled(!usingLoadedDataset);
@@ -339,7 +365,7 @@ public class MainFrame extends JFrame {
         }
     }
 
-    public void open() {
+    public void showUI() {
         setVisible(true);
     }
 }

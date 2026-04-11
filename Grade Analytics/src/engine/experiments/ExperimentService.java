@@ -4,12 +4,15 @@ import engine.data.DataService;
 import engine.data.Dataset;
 import engine.selection.SelectionResult;
 import engine.selection.SelectionService;
+import engine.selection.Stats;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ExperimentService 
-{
+public class ExperimentService {
+
     private final DataService data;
     private final SelectionService selection;
 
@@ -18,12 +21,9 @@ public class ExperimentService
         this.selection = selection;
     }
 
-    // run batch: each size -> generate once, repeat selection, average selected value
-    public BatchSummary run(BatchRequest req) 
-    {
+    public BatchSummary run(BatchRequest req) {
         validate(req);
 
-        // if a real csv dataset is loaded, export actual names and grades
         if (hasNamedDataset(req.sourceDataset)) {
             List<BatchAggregatedRow> namedRows = buildNameRows(req.sourceDataset);
             try {
@@ -36,32 +36,46 @@ public class ExperimentService
 
         List<BatchAggregatedRow> rows = new ArrayList<>();
 
-        // loop over each dataset size
-        for (int size : req.sizes) 
-        {
-            // Generate dataset using DataService
+        for (int size : req.sizes) {
             Dataset ds = data.generate(req.datasetType, size, req.seed);
 
-            long sumValue = 0;
+            long sumSortTime = 0;
+            long sumSortComp = 0;
+            long sumSortSwap = 0;
+            long sumQuickTime = 0;
+            long sumQuickComp = 0;
+            long sumQuickSwap = 0;
 
-            // repeat each trial
-            for (int r = 0; r < req.repeats; r++) 
-            {
-                // Run selection using SelectionService
+            for (int r = 0; r < req.repeats; r++) {
                 SelectionResult result = selection.run(req.selectionReq, ds);
-                sumValue += result.getValue();
+                Stats sort = result.getSortStats();
+                Stats quick = result.getQuickStats();
+                if (sort != null) {
+                    sumSortTime += sort.timeNanos;
+                    sumSortComp += sort.comparisons;
+                    sumSortSwap += sort.swaps;
+                }
+                if (quick != null) {
+                    sumQuickTime += quick.timeNanos;
+                    sumQuickComp += quick.comparisons;
+                    sumQuickSwap += quick.swaps;
+                }
             }
 
-            // average selected value for this size
-            int avgValue = (int) Math.round((double) sumValue / req.repeats);
+            double d = req.repeats;
             rows.add(
                     new BatchAggregatedRow(
-                            "Size " + size,
-                            avgValue));
+                            size,
+                            ds.getName(),
+                            sumSortTime / d,
+                            sumSortComp / d,
+                            sumSortSwap / d,
+                            sumQuickTime / d,
+                            sumQuickComp / d,
+                            sumQuickSwap / d));
         }
 
-        try 
-        {
+        try {
             CsvExporter.export(rows, req.outputPath);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to export batch CSV", e);
@@ -69,9 +83,7 @@ public class ExperimentService
         return new BatchSummary(req.outputPath);
     }
 
-    // check batch request fields
-    private static void validate(BatchRequest req)
-     {
+    private static void validate(BatchRequest req) {
         if (req == null) {
             throw new IllegalArgumentException("BatchRequest is null");
         }
@@ -92,8 +104,7 @@ public class ExperimentService
         }
     }
 
-    private static boolean hasNamedDataset(Dataset ds) 
-    {
+    private static boolean hasNamedDataset(Dataset ds) {
         return ds != null
                 && ds.getStudentNames() != null
                 && ds.getScores() != null
@@ -101,13 +112,15 @@ public class ExperimentService
                 && ds.getStudentNames().length > 0;
     }
 
-    private static List<BatchAggregatedRow> buildNameRows(Dataset ds) 
-    {
+    private static List<BatchAggregatedRow> buildNameRows(Dataset ds) {
         List<BatchAggregatedRow> rows = new ArrayList<>();
         String[] names = ds.getStudentNames();
         int[] scores = ds.getScores();
         for (int i = 0; i < scores.length; i++) {
-            String label = names[i] == null || names[i].trim().isEmpty() ? "Student" + (i + 1) : names[i].trim();
+            String label =
+                    names[i] == null || names[i].trim().isEmpty()
+                            ? "Student" + (i + 1)
+                            : names[i].trim();
             rows.add(new BatchAggregatedRow(label, scores[i]));
         }
         return rows;

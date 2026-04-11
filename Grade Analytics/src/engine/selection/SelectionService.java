@@ -1,26 +1,25 @@
 package engine.selection;
+
 import engine.data.Dataset;
 
 public class SelectionService {
-    //two selectors to compare data
-    private SortSelector sort = new SortSelector();           
-    private QuickselectSelector quick = new QuickselectSelector(); 
+    private final SortSelector sort = new SortSelector();
+    private final QuickselectSelector quick = new QuickselectSelector();
 
     public SelectionResult run(SelectionRequest req, Dataset ds) {
-        Stats sortStats = null;
-        Stats quickStats = null;
-        int result = 0;
+        Stats sortStats = new Stats();
+        Stats quickStats = new Stats();
 
-        if (req.method == MethodChoice.SORT || req.method == MethodChoice.BOTH)
-        {
-            sortStats = new Stats();
-            result = sort.select(ds.scores.clone(), req.toIndex0(ds.scores.length), sortStats);
+        int kIndex = req.toIndex0(ds.scores.length);
+        int finalResult = -1;
+
+        if (req.method == MethodChoice.SORT || req.method == MethodChoice.BOTH) {
+            finalResult = sort.select(ds.scores.clone(), kIndex, sortStats);
         }
-        if (req.method == MethodChoice.QUICKSELECT || req.method == MethodChoice.BOTH)
-        {
-            quickStats = new Stats();
-            result = quick.select(ds.scores.clone(), req.toIndex0(ds.scores.length), req.pivot, quickStats);
+        if (req.method == MethodChoice.QUICKSELECT || req.method == MethodChoice.BOTH) {
+            finalResult = quick.select(ds.scores.clone(), kIndex, req.pivot, quickStats);
         }
-        return new SelectionResult(result, sortStats, quickStats);
+
+        return new SelectionResult(finalResult, sortStats, quickStats);
     }
 }

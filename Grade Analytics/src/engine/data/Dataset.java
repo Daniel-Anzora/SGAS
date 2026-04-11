@@ -1,5 +1,4 @@
 package engine.data;
-import java.util.*;
 
 public class Dataset {
 
@@ -21,7 +20,6 @@ public class Dataset {
 
     public String getName() {
         return name;
-
     }
 
     public int[] getScores() {
@@ -35,8 +33,4 @@ public class Dataset {
     public int size() {
         return scores.length;
     }
-
-
-
-
 }
