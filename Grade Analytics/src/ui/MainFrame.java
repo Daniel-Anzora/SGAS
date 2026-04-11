@@ -255,12 +255,24 @@ public class MainFrame extends JFrame {
         final int[] sizes;
         final int repeats;
         final long seed;
-        final int k;
+        final SelectionRequest selectionReq;
+
         try {
-            sizes = parseSizes(batchSizesField.getText());
-            repeats = Integer.parseInt(batchRepeatsField.getText().trim());
-            seed = Long.parseLong(batchSeedField.getText().trim());
-            k = Integer.parseInt(valueField.getText().trim());
+            // Named export only writes students to CSV; ExperimentService still needs valid
+            // BatchRequest fields. Do not rely on disabled batch fields or valueField (k vs percentile).
+            if (isNamedDatasetForBatchExport(currentDataset)) {
+                int n = Math.max(1, currentDataset.size());
+                sizes = new int[] {n};
+                repeats = 1;
+                seed = 0L;
+                selectionReq = new SelectionRequest(1, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+            } else {
+                int k = Integer.parseInt(valueField.getText().trim());
+                sizes = parseSizes(batchSizesField.getText());
+                repeats = Integer.parseInt(batchRepeatsField.getText().trim());
+                seed = Long.parseLong(batchSeedField.getText().trim());
+                selectionReq = new SelectionRequest(k, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+            }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(
                     this,
@@ -269,7 +281,6 @@ public class MainFrame extends JFrame {
         }
 
         DatasetType type = (DatasetType) datasetTypeCombo.getSelectedItem();
-        SelectionRequest selectionReq = new SelectionRequest(k, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
 
         JFileChooser saveChooser = new JFileChooser();
         saveChooser.setDialogTitle("Save batch CSV");
