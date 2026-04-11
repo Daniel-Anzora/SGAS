@@ -86,6 +86,73 @@ public class DataService {
        
         
     }
+
+    // Merge two datasets: scores and student names in order.
+    public static Dataset merge(Dataset a, Dataset b) {
+        int totalSize = a.scores.length + b.scores.length;
+        int[] mergedScores = new int[totalSize];
+        String[] mergedNames = new String[totalSize];
+
+        System.arraycopy(a.scores, 0, mergedScores, 0, a.scores.length);
+        System.arraycopy(b.scores, 0, mergedScores, a.scores.length, b.scores.length);
+
+        String[] aNames =
+                a.getStudentNames() != null ? a.getStudentNames() : new String[a.scores.length];
+        String[] bNames =
+                b.getStudentNames() != null ? b.getStudentNames() : new String[b.scores.length];
+
+        System.arraycopy(aNames, 0, mergedNames, 0, aNames.length);
+        System.arraycopy(bNames, 0, mergedNames, aNames.length, bNames.length);
+
+        return new Dataset("Merged Dataset", mergedScores, mergedNames);
+    }
+
+    // Sort by grade (highest first), then by name when scores tie; keeps names and scores paired.
+    public static Dataset sortStudents(Dataset ds) {
+        int n = ds.scores.length;
+        if (n <= 1) {
+            return ds;
+        }
+        Integer[] ord = new Integer[n];
+        for (int i = 0; i < n; i++) {
+            ord[i] = i;
+        }
+        String[] names = ds.getStudentNames();
+        int[] sc = ds.scores;
+        Arrays.sort(
+                ord,
+                (i, j) -> {
+                    int byScore = Integer.compare(sc[j], sc[i]);
+                    if (byScore != 0) {
+                        return byScore;
+                    }
+                    if (names != null) {
+                        String ai =
+                                names[i] != null && !names[i].trim().isEmpty()
+                                        ? names[i].trim()
+                                        : "";
+                        String aj =
+                                names[j] != null && !names[j].trim().isEmpty()
+                                        ? names[j].trim()
+                                        : "";
+                        return ai.compareToIgnoreCase(aj);
+                    }
+                    return Integer.compare(i, j);
+                });
+        int[] outScores = new int[n];
+        String[] outNames = names != null ? new String[n] : null;
+        for (int i = 0; i < n; i++) {
+            int k = ord[i];
+            outScores[i] = sc[k];
+            if (outNames != null) {
+                outNames[i] = names[k];
+            }
+        }
+        if (outNames == null) {
+            return new Dataset(ds.getName(), outScores);
+        }
+        return new Dataset(ds.getName(), outScores, outNames);
+    }
 }
 
 

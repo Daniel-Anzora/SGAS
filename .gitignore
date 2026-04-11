@@ -1,2 +1,5 @@
 # macOS
 .DS_Store
+
+# Java compile output — build from Grade Analytics/src locally
+Grade Analytics/bin/

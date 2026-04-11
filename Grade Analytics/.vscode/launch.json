@@ -1,0 +1,11 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Run SGAS (UI)",
+            "request": "launch",
+            "mainClass": "engine.main.SGASMain"
+        }
+    ]
+}

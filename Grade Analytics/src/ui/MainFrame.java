@@ -1,5 +1,6 @@
 package ui;
 
+import engine.data.DataService;
 import engine.data.Dataset;
 import engine.data.DatasetType;
 import engine.experiments.BatchRequest;
@@ -29,6 +30,9 @@ public class MainFrame extends JFrame {
     private JTextField batchRepeatsField;
     private JTextField batchSeedField;
     private JComboBox<DatasetType> datasetTypeCombo;
+
+    private JTextArea manualInputArea;
+    private Dataset manualDataset;
 
     public MainFrame(AppController controller) {
         this.controller = controller;
@@ -67,6 +71,79 @@ public class MainFrame extends JFrame {
         runButton.addActionListener(e -> runSelection());
 
         north.add(inputPanel);
+
+        JPanel manualPanel = new JPanel(new BorderLayout());
+        manualPanel.setBorder(BorderFactory.createTitledBorder("Manual Entry (format: Name, Grade) "));
+        manualInputArea = new JTextArea(4, 40);
+        manualPanel.add(new JScrollPane(manualInputArea), BorderLayout.CENTER);
+
+        JPanel manualButtons = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton addEntriesButton = new JButton("Add Entries");
+        JButton clearManualButton = new JButton("Clear manual");
+        manualButtons.add(addEntriesButton);
+        manualButtons.add(clearManualButton);
+        manualPanel.add(manualButtons, BorderLayout.SOUTH);
+
+        addEntriesButton.addActionListener(e -> {
+            String text = manualInputArea.getText().trim();
+            if (text.isEmpty())
+            {
+                JOptionPane.showMessageDialog(this, "No entries to add.");
+                return;
+            }
+            List<String> names = new ArrayList<>();
+            List<Integer> scores = new ArrayList<>();
+            for (String line : text.split("\\r?\\n|\\r"))
+            {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+                String[] parts = line.split(",");
+                if (parts.length != 2)
+                {
+                    JOptionPane.showMessageDialog(this, "Invalid format: \"" + line + "\". Use Name, Grade.");
+                    return;
+                }
+
+                try 
+                {
+                    names.add(parts[0].trim());
+                    scores.add(Integer.parseInt(parts[1].trim()));
+
+                } catch (NumberFormatException ex){
+                    JOptionPane.showMessageDialog(this, "Invalid grade in: \"" + line + "\"");
+                    return;
+                }
+            }
+            int[] arr = scores.stream().mapToInt(i -> i).toArray();
+            String[] nameArr = names.toArray(new String[0]);
+            manualDataset = new Dataset("Manual", arr, nameArr);
+
+            if (currentDataset != null) {
+                currentDataset =
+                        DataService.sortStudents(
+                                DataService.merge(currentDataset, manualDataset));
+                outputArea.append(
+                        "Merged manual entries into current dataset. Total: "
+                                + currentDataset.size()
+                                + " students.\n");
+            } else {
+                currentDataset = DataService.sortStudents(manualDataset);
+                outputArea.append(
+                        "Added manual entries. Total: "
+                                + currentDataset.size()
+                                + " students.\n");
+            }
+            updateBatchControlsForDataset();
+        });
+
+        clearManualButton.addActionListener(
+                e -> {
+                    manualDataset = null;
+                    manualInputArea.setText("");
+                    outputArea.append("Manual entries cleared.\n");
+                });
+
+        north.add(manualPanel);
 
         JPanel batchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         batchPanel.add(new JLabel("Sizes (comma-separated):"));
@@ -193,6 +270,12 @@ public class MainFrame extends JFrame {
                             BatchSummary summary = get();
                             File f = new File(summary.csvPath).getAbsoluteFile();
                             outputArea.append("Saved results to " + f.getAbsolutePath() + "\n");
+                            if (isNamedDatasetForBatchExport(currentDataset)) {
+                                outputArea.append(
+                                        "Named export: "
+                                                + currentDataset.size()
+                                                + " rows (name, grade per line).\n");
+                            }
                             int open =
                                     JOptionPane.showConfirmDialog(
                                             MainFrame.this,
@@ -232,6 +315,16 @@ public class MainFrame extends JFrame {
             throw new NumberFormatException("no sizes");
         }
         return list.stream().mapToInt(i -> i).toArray();
+    }
+
+    // Same idea as ExperimentService.hasNamedDataset: batch CSV lists each student name and grade.
+    private static boolean isNamedDatasetForBatchExport(Dataset ds) {
+        if (ds == null || ds.getStudentNames() == null || ds.getScores() == null) {
+            return false;
+        }
+        String[] names = ds.getStudentNames();
+        int n = ds.getScores().length;
+        return names.length == n && n > 0;
     }
 
     // if a csv dataset is loaded, batch export uses name,grade rows from that dataset
