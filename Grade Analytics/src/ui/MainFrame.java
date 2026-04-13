@@ -193,12 +193,34 @@ public class MainFrame extends JFrame{
             final int[] sizes;
             final int repeats;
             final long seed;
-            final int k;
+			final SelectionMode mode;
+			int k;
+			double p;
+			final SelectionRequest req;
+           
             try {
                 sizes = parseSizes(batchSizesField.getText());
                 repeats = Integer.parseInt(batchRepeatsField.getText().trim());
                 seed = Long.parseLong(batchSeedField.getText().trim());
-                k = Integer.parseInt(valueField.getText().trim());
+				mode = (SelectionMode) selectionModeCombo.getSelectedItem();
+				switch (mode) {
+					case KTH: 
+						k = Integer.parseInt(valueField.getText().trim());
+						req = new SelectionRequest(k, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+						break;
+					case PERCENTILE:
+						p = Double.parseDouble(valueField.getText().trim());
+						req = new SelectionRequest(p, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+						break;
+					case MEDIAN:
+						req = new SelectionRequest(MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+						break;
+					
+					default: 
+						throw new IllegalStateException("Unexpected mode: " + mode);
+
+				}
+                
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(
                         this, "Check sizes (comma-separated integers), repeats, seed, and value.");
@@ -206,11 +228,9 @@ public class MainFrame extends JFrame{
             }
     
             DatasetType type = (DatasetType) datasetTypeCombo.getSelectedItem();
-            SelectionRequest selectionReq =
-                    new SelectionRequest(
-                            SelectionMode.KTH, MethodChoice.BOTH, PivotStrategy.MEDIAN3, k, 0.0);
+
     
-            final BatchRequest batchReq = new BatchRequest(sizes, repeats, type, seed, selectionReq);
+            final BatchRequest batchReq = new BatchRequest(sizes, repeats, type, seed, req);
     
             outputArea.append("Running batch experiment…\n");
             SwingWorker<BatchSummary, Void> worker =
