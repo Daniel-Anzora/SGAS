@@ -1,37 +1,94 @@
 package engine.data;
-import java.io.*;
-import java.util.*;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Random;
 
 public class DataService {
 
-
+    // Optional first line Name,Grade (or similar). Otherwise rows are name,grade or one score per line.
     public static Dataset loadCsv(String path) {
         List<String> names = new ArrayList<>();
         List<Integer> scores = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+        try (BufferedReader reader =
+                Files.newBufferedReader(Paths.get(path), StandardCharsets.UTF_8)) {
+            List<String> lines = new ArrayList<>();
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
-                
+                if (line.isEmpty()) {
+                    continue;
+                }
+                if (line.charAt(0) == '\uFEFF') {
+                    line = line.substring(1).trim();
+                }
+                lines.add(line);
+            }
+            int start = 0;
+            if (!lines.isEmpty() && looksLikeNameValueHeader(lines.get(0))) {
+                start = 1;
+            }
+            for (int i = start; i < lines.size(); i++) {
+                line = lines.get(i);
                 try {
                     if (!line.contains(",")) {
-                        names.add("Student" + (scores.size() + 1));
+                        names.add("Student" + (names.size() + 1));
                         scores.add(Integer.parseInt(line));
                     } else {
-                        String[] parts = line.split(",");
+                        String[] parts = line.split(",", 2);
+                        if (parts.length < 2) {
+                            continue;
+                        }
                         names.add(parts[0].trim());
                         scores.add(Integer.parseInt(parts[1].trim()));
-                        }
-                    } catch (NumberFormatException ignored) {}
+                    }
+                } catch (NumberFormatException ignored) {
                 }
             }
-         catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Error loading CSV file: " + path, e);
         }
 
         int[] arr = scores.stream().mapToInt(i -> i).toArray();
         String[] namesArr = names.toArray(new String[0]);
         return new Dataset("CSV Dataset", arr, namesArr);
+    }
+
+    private static boolean looksLikeNameValueHeader(String line) {
+        if (!line.contains(",")) {
+            return false;
+        }
+        String[] parts = line.split(",", 2);
+        if (parts.length < 2) {
+            return false;
+        }
+        String a = parts[0].trim().toLowerCase(Locale.ROOT);
+        String b = parts[1].trim().toLowerCase(Locale.ROOT);
+        boolean nameCol =
+                a.equals("name")
+                        || a.equals("names")
+                        || a.equals("student")
+                        || a.equals("students")
+                        || a.equals("fullname")
+                        || a.equals("full name");
+        boolean valueCol =
+                b.equals("grade")
+                        || b.equals("grades")
+                        || b.equals("score")
+                        || b.equals("scores")
+                        || b.equals("value")
+                        || b.equals("values")
+                        || b.equals("mark")
+                        || b.equals("marks")
+                        || b.equals("points");
+        return nameCol && valueCol;
     }
 
     public Dataset generate(DatasetType type, int n, long seed) {

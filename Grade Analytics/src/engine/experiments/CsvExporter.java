@@ -28,13 +28,14 @@ public final class CsvExporter {
                 }
             } else {
                 writer.println(
-                        "size,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,"
+                        "size,selectionMode,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,"
                                 + "avgQuickTimeNanos,avgQuickComparisons,avgQuickSwaps");
                 for (BatchAggregatedRow row : rows) {
                     writer.printf(
                             java.util.Locale.US,
-                            "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
+                            "%d,%s,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
                             row.size,
+                            row.selectionMode.name(),
                             row.datasetName,
                             row.avgSortTimeNanos,
                             row.avgSortComparisons,

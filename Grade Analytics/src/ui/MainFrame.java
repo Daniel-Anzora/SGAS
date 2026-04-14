@@ -156,8 +156,7 @@ public class MainFrame extends JFrame {
 
         outputArea = new JTextArea();
         outputArea.setEditable(false);
-        outputArea.setLineWrap(true);
-        outputArea.setWrapStyleWord(true);
+        outputArea.setLineWrap(false);
         add(new JScrollPane(outputArea), BorderLayout.CENTER);
 
         loadButton.addActionListener(e -> loadCsvFile());
@@ -230,8 +229,8 @@ public class MainFrame extends JFrame {
                 int[] sc = currentDataset.getScores();
                 for (int i = 0; i < sc.length; i++) {
                     if (sc[i] == val) {
-                        outputArea.append(
-                                "Student: " + names[i] + " - Grade: " + val + "\n");
+                        outputArea.append("Student: " + names[i] + "\n");
+                        outputArea.append("Grade: " + val + "\n");
                         break;
                     }
                 }
@@ -258,25 +257,25 @@ public class MainFrame extends JFrame {
         final SelectionRequest selectionReq;
 
         try {
-            // Named export only writes students to CSV; ExperimentService still needs valid
-            // BatchRequest fields. Do not rely on disabled batch fields or valueField (k vs percentile).
+            // Named export uses placeholder sizes/repeats/seed; selection still uses the mode controls.
+            MethodChoice method = MethodChoice.BOTH;
+            PivotStrategy pivot = PivotStrategy.MEDIAN3;
             if (isNamedDatasetForBatchExport(currentDataset)) {
                 int n = Math.max(1, currentDataset.size());
                 sizes = new int[] {n};
                 repeats = 1;
                 seed = 0L;
-                selectionReq = new SelectionRequest(1, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+                selectionReq = buildSelectionRequestFromUi(method, pivot);
             } else {
-                int k = Integer.parseInt(valueField.getText().trim());
                 sizes = parseSizes(batchSizesField.getText());
                 repeats = Integer.parseInt(batchRepeatsField.getText().trim());
                 seed = Long.parseLong(batchSeedField.getText().trim());
-                selectionReq = new SelectionRequest(k, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+                selectionReq = buildSelectionRequestFromUi(method, pivot);
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(
                     this,
-                    "Check sizes (comma-separated integers), repeats, seed, and value (k).");
+                    "Check sizes, repeats, seed, and the value field (k for KTH, percentile for PERCENTILE).");
             return;
         }
 
@@ -338,6 +337,23 @@ public class MainFrame extends JFrame {
                     }
                 };
         worker.execute();
+    }
+
+    // Like runSelection: value field for k or percentile, not for median.
+    private SelectionRequest buildSelectionRequestFromUi(MethodChoice method, PivotStrategy pivot) {
+        SelectionMode mode = (SelectionMode) selectionModeCombo.getSelectedItem();
+        switch (mode) {
+            case KTH:
+                int k = Integer.parseInt(valueField.getText().trim());
+                return new SelectionRequest(k, method, pivot);
+            case PERCENTILE:
+                double p = Double.parseDouble(valueField.getText().trim());
+                return new SelectionRequest(p, method, pivot);
+            case MEDIAN:
+                return new SelectionRequest(method, pivot);
+            default:
+                throw new IllegalStateException("Unexpected mode: " + mode);
+        }
     }
 
     private static int[] parseSizes(String text) {

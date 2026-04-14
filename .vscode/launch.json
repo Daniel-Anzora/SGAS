@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "SGASMain",
+            "request": "launch",
+            "mainClass": "engine.main.SGASMain",
+            "projectName": "SGAS_160418f0"
+        },
+        {
+            "type": "java",
             "name": "Run SGAS (UI)",
             "request": "launch",
             "mainClass": "engine.main.SGASMain",

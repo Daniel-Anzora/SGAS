@@ -1,5 +1,7 @@
 package engine.experiments;
 
+import engine.selection.SelectionMode;
+
 // Row for CSV: either name+grade (named export) or aggregated batch stats per size.
 public final class BatchAggregatedRow {
 
@@ -9,6 +11,7 @@ public final class BatchAggregatedRow {
     public final int value;
 
     public final int size;
+    public final SelectionMode selectionMode; // null for name+grade rows
     public final String datasetName;
     public final double avgSortTimeNanos;
     public final double avgSortComparisons;
@@ -22,6 +25,7 @@ public final class BatchAggregatedRow {
         this.label = label;
         this.value = value;
         this.size = 0;
+        this.selectionMode = null;
         this.datasetName = "";
         this.avgSortTimeNanos = 0;
         this.avgSortComparisons = 0;
@@ -33,6 +37,7 @@ public final class BatchAggregatedRow {
 
     public BatchAggregatedRow(
             int size,
+            SelectionMode selectionMode,
             String datasetName,
             double avgSortTimeNanos,
             double avgSortComparisons,
@@ -44,6 +49,7 @@ public final class BatchAggregatedRow {
         this.label = null;
         this.value = 0;
         this.size = size;
+        this.selectionMode = selectionMode;
         this.datasetName = datasetName;
         this.avgSortTimeNanos = avgSortTimeNanos;
         this.avgSortComparisons = avgSortComparisons;

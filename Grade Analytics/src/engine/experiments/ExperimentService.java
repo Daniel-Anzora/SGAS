@@ -2,6 +2,7 @@ package engine.experiments;
 
 import engine.data.DataService;
 import engine.data.Dataset;
+import engine.selection.SelectionMode;
 import engine.selection.SelectionResult;
 import engine.selection.SelectionService;
 import engine.selection.Stats;
@@ -35,6 +36,7 @@ public class ExperimentService {
         }
 
         List<BatchAggregatedRow> rows = new ArrayList<>();
+        SelectionMode mode = req.selectionReq.mode;
 
         for (int size : req.sizes) {
             Dataset ds = data.generate(req.datasetType, size, req.seed);
@@ -66,6 +68,7 @@ public class ExperimentService {
             rows.add(
                     new BatchAggregatedRow(
                             size,
+                            mode,
                             ds.getName(),
                             sumSortTime / d,
                             sumSortComp / d,
