@@ -28,14 +28,22 @@ public final class CsvExporter {
                 }
             } else {
                 writer.println(
-                        "size,selectionMode,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,"
+                        "size,selectionMode,k,percentile,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,"
                                 + "avgQuickTimeNanos,avgQuickComparisons,avgQuickSwaps");
                 for (BatchAggregatedRow row : rows) {
+                    String kCol = row.selectionK == null ? "" : row.selectionK.toString();
+                    String pctCol =
+                            row.selectionPercentile == null
+                                    ? ""
+                                    : String.format(
+                                            java.util.Locale.US, "%.2f", row.selectionPercentile);
                     writer.printf(
                             java.util.Locale.US,
-                            "%d,%s,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
+                            "%d,%s,%s,%s,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f%n",
                             row.size,
                             row.selectionMode.name(),
+                            kCol,
+                            pctCol,
                             row.datasetName,
                             row.avgSortTimeNanos,
                             row.avgSortComparisons,

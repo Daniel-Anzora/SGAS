@@ -27,16 +27,15 @@ public class ExperimentService {
 
         if (hasNamedDataset(req.sourceDataset)) {
             List<BatchAggregatedRow> namedRows = buildNameRows(req.sourceDataset);
-            try {
-                CsvExporter.export(namedRows, req.outputPath);
-            } catch (IOException e) {
-                throw new UncheckedIOException("Failed to export batch CSV", e);
-            }
+            exportCsv(namedRows, req.outputPath);
             return new BatchSummary(req.outputPath);
         }
 
         List<BatchAggregatedRow> rows = new ArrayList<>();
         SelectionMode mode = req.selectionReq.mode;
+        Integer rowK = mode == SelectionMode.KTH ? req.selectionReq.k : null;
+        Double rowPct =
+                mode == SelectionMode.PERCENTILE ? req.selectionReq.percentile : null;
 
         for (int size : req.sizes) {
             Dataset ds = data.generate(req.datasetType, size, req.seed);
@@ -69,6 +68,8 @@ public class ExperimentService {
                     new BatchAggregatedRow(
                             size,
                             mode,
+                            rowK,
+                            rowPct,
                             ds.getName(),
                             sumSortTime / d,
                             sumSortComp / d,
@@ -78,12 +79,16 @@ public class ExperimentService {
                             sumQuickSwap / d));
         }
 
+        exportCsv(rows, req.outputPath);
+        return new BatchSummary(req.outputPath);
+    }
+
+    private static void exportCsv(List<BatchAggregatedRow> rows, String outputPath) {
         try {
-            CsvExporter.export(rows, req.outputPath);
+            CsvExporter.export(rows, outputPath);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to export batch CSV", e);
         }
-        return new BatchSummary(req.outputPath);
     }
 
     private static void validate(BatchRequest req) {

@@ -11,7 +11,9 @@ public final class BatchAggregatedRow {
     public final int value;
 
     public final int size;
-    public final SelectionMode selectionMode; // null for name+grade rows
+    public final SelectionMode selectionMode;
+    public final Integer selectionK;
+    public final Double selectionPercentile;
     public final String datasetName;
     public final double avgSortTimeNanos;
     public final double avgSortComparisons;
@@ -26,6 +28,8 @@ public final class BatchAggregatedRow {
         this.value = value;
         this.size = 0;
         this.selectionMode = null;
+        this.selectionK = null;
+        this.selectionPercentile = null;
         this.datasetName = "";
         this.avgSortTimeNanos = 0;
         this.avgSortComparisons = 0;
@@ -38,6 +42,8 @@ public final class BatchAggregatedRow {
     public BatchAggregatedRow(
             int size,
             SelectionMode selectionMode,
+            Integer selectionK,
+            Double selectionPercentile,
             String datasetName,
             double avgSortTimeNanos,
             double avgSortComparisons,
@@ -50,6 +56,8 @@ public final class BatchAggregatedRow {
         this.value = 0;
         this.size = size;
         this.selectionMode = selectionMode;
+        this.selectionK = selectionK;
+        this.selectionPercentile = selectionPercentile;
         this.datasetName = datasetName;
         this.avgSortTimeNanos = avgSortTimeNanos;
         this.avgSortComparisons = avgSortComparisons;
