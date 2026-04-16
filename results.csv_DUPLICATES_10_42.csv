@@ -1,0 +1,6 @@
+size,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,avgQuickTimeNanos,avgQuickComparisons,avgQuickSwaps
+100,Duplicates,4880.00,4950.00,45.00,3200.00,310.00,76.00
+200,Duplicates,18890.00,19900.00,178.00,880.00,455.00,83.00
+300,Duplicates,42280.00,44850.00,264.00,1410.00,866.00,182.00
+400,Duplicates,81660.00,79800.00,358.00,2570.00,1160.00,275.00
+500,Duplicates,132160.00,124750.00,447.00,2690.00,1697.00,377.00

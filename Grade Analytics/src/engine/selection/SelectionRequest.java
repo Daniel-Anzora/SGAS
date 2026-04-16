@@ -34,7 +34,7 @@ public class SelectionRequest {
         switch (mode) {
 
             case KTH:
-                return k;
+                return k - 1;
 
             case MEDIAN:
                 return n / 2;

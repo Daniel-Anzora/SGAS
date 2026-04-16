@@ -1,0 +1,6 @@
+size,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,avgQuickTimeNanos,avgQuickComparisons,avgQuickSwaps
+100,Reverse Sorted,7930.00,4950.00,50.00,5670.00,154.00,57.00
+200,Reverse Sorted,25930.00,19900.00,100.00,1520.00,304.00,107.00
+300,Reverse Sorted,53380.00,44850.00,150.00,11900.00,454.00,157.00
+400,Reverse Sorted,89260.00,79800.00,200.00,2760.00,604.00,207.00
+500,Reverse Sorted,147950.00,124750.00,250.00,3860.00,754.00,257.00
