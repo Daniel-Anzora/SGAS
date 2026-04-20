@@ -150,7 +150,7 @@ public class MainFrame extends JFrame{
 	                JOptionPane.showMessageDialog(this, "Please load a CSV file first.");
 	                return;
 	            }
-	            //Parse the k value entered
+	            //Parse the mode value entered
 	            SelectionMode mode = (SelectionMode) selectionModeCombo.getSelectedItem();
 				MethodChoice method = MethodChoice.BOTH;
 				PivotStrategy pivot = PivotStrategy.MEDIAN3;
