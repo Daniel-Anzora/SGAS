@@ -2,6 +2,7 @@ package engine.experiments;
 
 import engine.data.DataService;
 import engine.data.Dataset;
+import engine.selection.SelectionMode;
 import engine.selection.SelectionResult;
 import engine.selection.SelectionService;
 import engine.selection.Stats;
@@ -13,8 +14,6 @@ import java.util.List;
 
 public class ExperimentService {
 
-    private static final String DEFAULT_CSV_PATH = "results.csv";
-
     private final DataService data;
     private final SelectionService selection;
 
@@ -23,17 +22,22 @@ public class ExperimentService {
         this.selection = selection;
     }
 
-    // run batch: each size -> generate once, repeat selection, average stats, one csv row per size
-    public BatchSummary run(BatchRequest req) 
-    {
+    public BatchSummary run(BatchRequest req) {
         validate(req);
 
-        List<BatchAggregatedRow> rows = new ArrayList<>();
+        if (hasNamedDataset(req.sourceDataset)) {
+            List<BatchAggregatedRow> namedRows = buildNameRows(req.sourceDataset);
+            exportCsv(namedRows, req.outputPath);
+            return new BatchSummary(req.outputPath);
+        }
 
-        // loop over each dataset size
-        for (int size : req.sizes) 
-        {
-            // Generate dataset using DataService
+        List<BatchAggregatedRow> rows = new ArrayList<>();
+        SelectionMode mode = req.selectionReq.mode;
+        Integer rowK = mode == SelectionMode.KTH ? req.selectionReq.k : null;
+        Double rowPct =
+                mode == SelectionMode.PERCENTILE ? req.selectionReq.percentile : null;
+
+        for (int size : req.sizes) {
             Dataset ds = data.generate(req.datasetType, size, req.seed);
 
             long sumSortTime = 0;
@@ -43,10 +47,7 @@ public class ExperimentService {
             long sumQuickComp = 0;
             long sumQuickSwap = 0;
 
-            // repeat each trial
-            for (int r = 0; r < req.repeats; r++) 
-            {
-                // Run selection using SelectionService
+            for (int r = 0; r < req.repeats; r++) {
                 SelectionResult result = selection.run(req.selectionReq, ds);
                 Stats sort = result.getSortStats();
                 Stats quick = result.getQuickStats();
@@ -62,11 +63,13 @@ public class ExperimentService {
                 }
             }
 
-            // average stats for this size
             double d = req.repeats;
             rows.add(
                     new BatchAggregatedRow(
                             size,
+                            mode,
+                            rowK,
+                            rowPct,
                             ds.getName(),
                             sumSortTime / d,
                             sumSortComp / d,
@@ -76,20 +79,19 @@ public class ExperimentService {
                             sumQuickSwap / d));
         }
 
-        String csvPath = null;
-        try 
-        {
-            csvPath = DEFAULT_CSV_PATH + "_" + req.datasetType.name() + "_" + req.repeats + "_" + req.seed + ".csv";
-            CsvExporter.export(rows, csvPath);
+        exportCsv(rows, req.outputPath);
+        return new BatchSummary(req.outputPath);
+    }
+
+    private static void exportCsv(List<BatchAggregatedRow> rows, String outputPath) {
+        try {
+            CsvExporter.export(rows, outputPath);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to export batch CSV", e);
         }
-        return new BatchSummary(csvPath);
     }
 
-    // check batch request fields
-    private static void validate(BatchRequest req)
-     {
+    private static void validate(BatchRequest req) {
         if (req == null) {
             throw new IllegalArgumentException("BatchRequest is null");
         }
@@ -105,5 +107,30 @@ public class ExperimentService {
         if (req.selectionReq == null) {
             throw new IllegalArgumentException("selectionReq is null");
         }
+        if (req.outputPath == null || req.outputPath.trim().isEmpty()) {
+            throw new IllegalArgumentException("outputPath is null or empty");
+        }
+    }
+
+    private static boolean hasNamedDataset(Dataset ds) {
+        return ds != null
+                && ds.getStudentNames() != null
+                && ds.getScores() != null
+                && ds.getStudentNames().length == ds.getScores().length
+                && ds.getStudentNames().length > 0;
+    }
+
+    private static List<BatchAggregatedRow> buildNameRows(Dataset ds) {
+        List<BatchAggregatedRow> rows = new ArrayList<>();
+        String[] names = ds.getStudentNames();
+        int[] scores = ds.getScores();
+        for (int i = 0; i < scores.length; i++) {
+            String label =
+                    names[i] == null || names[i].trim().isEmpty()
+                            ? "Student" + (i + 1)
+                            : names[i].trim();
+            rows.add(new BatchAggregatedRow(label, scores[i]));
+        }
+        return rows;
     }
 }
