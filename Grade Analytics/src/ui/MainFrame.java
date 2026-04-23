@@ -9,6 +9,7 @@ import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 //imports Backend data and selection class
+import engine.data.DataService;
 import engine.data.Dataset;
 import engine.data.DatasetType;
 import engine.selection.SelectionRequest;
@@ -26,8 +27,10 @@ public class MainFrame extends JFrame{
 		//input(k value) and output(where results will be printed)
 		private JTextField valueField;
 		private JTextArea outputArea;
-		//stores dataset currently loaded from csv file 
+		//stores dataset currently loaded from csv file and/or manual entry
 		private Dataset currentDataset;
+		private Dataset manualDataset;
+		private JTextArea manualInputArea;
         private JTextField batchSizesField;
         private JTextField batchRepeatsField;
         private JTextField batchSeedField;
@@ -46,7 +49,7 @@ public class MainFrame extends JFrame{
 	        this.controller = controller;
 
 	        setTitle("Student Grade Analytics");
-	        setSize(950, 500);
+	        setSize(950, 640);
 	        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	        setLayout(new BorderLayout());
 	        setLocationRelativeTo(null);
@@ -82,9 +85,90 @@ public class MainFrame extends JFrame{
 	        runButton.setEnabled(false);
 	        row1.add(runButton);
 
-	        //Row 2: batch controls
-	        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+            //row 2: Batch experiment controls with manual entry as well
+	        JPanel manualPanel = new JPanel(new BorderLayout());
+	        manualPanel.setBorder(BorderFactory.createTitledBorder("Manual Entry for batch experiment (format: Name, Grade)"));
+	        manualInputArea = new JTextArea(4, 40);
+	        manualInputArea.setLineWrap(true);
+	        manualInputArea.setWrapStyleWord(true);
+	        manualPanel.add(new JScrollPane(manualInputArea), BorderLayout.CENTER);
+	        JPanel manualButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+	        JButton addEntriesButton = new JButton("Add Entries");
+	        JButton clearManualButton = new JButton("Clear manual");
+	        addEntriesButton.setBackground(new Color(60, 120, 200));
+	        addEntriesButton.setForeground(Color.WHITE);
+	        addEntriesButton.setFocusPainted(false);
+	        clearManualButton.setBackground(new Color(150, 150, 150));
+	        clearManualButton.setForeground(Color.WHITE);
+	        clearManualButton.setFocusPainted(false);
+	        manualButtons.add(addEntriesButton);
+	        manualButtons.add(clearManualButton);
+	        manualPanel.add(manualButtons, BorderLayout.SOUTH);
 
+	        addEntriesButton.addActionListener(
+	                e -> {
+	                    String text = manualInputArea.getText().trim();
+	                    if (text.isEmpty()) {
+	                        JOptionPane.showMessageDialog(this, "No entries to add.");
+	                        return;
+	                    }
+	                    List<String> names = new ArrayList<>();
+	                    List<Integer> scores = new ArrayList<>();
+	                    for (String line : text.split("\\r?\\n|\\r")) {
+	                        line = line.trim();
+	                        if (line.isEmpty()) {
+	                            continue;
+	                        }
+	                        String[] parts = line.split(",", 2);
+	                        if (parts.length != 2) {
+	                            JOptionPane.showMessageDialog(
+	                                    this,
+	                                    "Invalid format: \"" + line + "\". Use Name, Grade.");
+	                            return;
+	                        }
+	                        try {
+	                            names.add(parts[0].trim());
+	                            scores.add(Integer.parseInt(parts[1].trim()));
+	                        } catch (NumberFormatException ex) {
+	                            JOptionPane.showMessageDialog(
+	                                    this, "Invalid grade in: \"" + line + "\"");
+	                            return;
+	                        }
+	                    }
+	                    int[] arr = scores.stream().mapToInt(i -> i).toArray();
+	                    String[] nameArr = names.toArray(new String[0]);
+	                    manualDataset = new Dataset("Manual", arr, nameArr);
+
+	                    if (currentDataset != null) {
+	                        currentDataset =
+	                                DataService.sortStudents(
+	                                        DataService.merge(currentDataset, manualDataset));
+	                        outputArea.append(
+	                                "Merged manual entries into current dataset. Total: "
+	                                        + currentDataset.size()
+	                                        + " students.\n");
+	                    } else {
+	                        currentDataset = DataService.sortStudents(manualDataset);
+	                        outputArea.setText("");
+	                        outputArea.append("=== Student Grade Analytics ===\n");
+	                        outputArea.append("--------------------------------\n");
+	                        outputArea.append(
+	                                "Added manual entries. Total: "
+	                                        + currentDataset.size()
+	                                        + " students.\n");
+	                    }
+	                    runButton.setEnabled(true);
+	                    updateBatchControlsForDataset();
+	                });
+
+	        clearManualButton.addActionListener(
+	                e -> {
+	                    manualDataset = null;
+	                    manualInputArea.setText("");
+	                    outputArea.append("Manual input cleared. (Load CSV / add entries again.)\n");
+	                });
+
+	        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
 	        row2.add(new JLabel("Sizes (comma-separated):"));
 	        batchSizesField = new JTextField(16);
 	        batchSizesField.setText("100,200,300,400,500");
@@ -111,7 +195,10 @@ public class MainFrame extends JFrame{
 	        runBatchButton.setFocusPainted(false);
 	        row2.add(runBatchButton);
 
+	        row2.setBorder(BorderFactory.createTitledBorder("Batch experiment (generated data)"));
+
 	        topPanel.add(row1);
+	        topPanel.add(manualPanel);
 	        topPanel.add(row2);
 	        add(topPanel, BorderLayout.NORTH);
 
@@ -120,7 +207,7 @@ public class MainFrame extends JFrame{
 	        outputArea.setEditable(false);
 	        outputArea.setLineWrap(true);
 	        outputArea.setWrapStyleWord(true);
-	        outputArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+	        outputArea.setFont(new Font("Monospaced", Font.PLAIN, 20));
 	        outputArea.setMargin(new Insets(10, 10, 10, 10));
 
 	        JScrollPane scrollPane = new JScrollPane(outputArea);
@@ -187,7 +274,8 @@ public class MainFrame extends JFrame{
 	        try {
 	            //Prevents running if no CSV dataset has been loaded
 	            if (currentDataset == null) {
-	                JOptionPane.showMessageDialog(this, "Please load a CSV file first.");
+	                JOptionPane.showMessageDialog(
+	                        this, "Load a CSV file, or add manual entries, first.");
 	                return;
 	            }
 	            //Parse the k value entered
@@ -218,6 +306,14 @@ public class MainFrame extends JFrame{
 	            outputArea.append("=== Student Grade Analytics ===\n");
 	            outputArea.append("--------------------------------\n");
 	            outputArea.append("Selection completed successfully.\n\n");
+                String nameLine = "";
+                if (result.getSelectedIndex() >= 0 && currentDataset.getStudentNames() != null) {
+                    String n = currentDataset.getStudentNames()[result.getSelectedIndex()];
+                    nameLine = "Name: " + n + "\n";
+                } else if (result.getName() != null) {
+                    nameLine = "Name: " + result.getName() + "\n";
+                }
+                outputArea.append(nameLine);
 				outputArea.append("Mode: " + mode + "\n");
 	            outputArea.append("Value: " + result.getValue() + "\n");
 	            outputArea.append("Sort Time: " + result.getSortStats().timeNanos + "ns\n");
@@ -317,6 +413,20 @@ public class MainFrame extends JFrame{
             worker.execute();
         }
     
+	/** Optional: set batch "sizes" to the loaded dataset length when still using the default preset. */
+	private void updateBatchControlsForDataset() {
+		if (currentDataset == null) {
+			return;
+		}
+		// default first size to dataset length when batch field is still the generic preset (optional)
+		if (currentDataset.size() > 0 && batchSizesField != null) {
+			String cur = batchSizesField.getText().replaceAll("\\s", "");
+			if (cur.isEmpty() || cur.startsWith("100,200,300,400,500")) {
+				batchSizesField.setText(String.valueOf(currentDataset.size()));
+			}
+		}
+	}
+
         private static int[] parseSizes(String text) {
             String[] parts = text.split(",");
             List<Integer> list = new ArrayList<>();

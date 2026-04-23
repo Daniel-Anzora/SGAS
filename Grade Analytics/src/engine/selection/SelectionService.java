@@ -9,17 +9,37 @@ public class SelectionService {
     public SelectionResult run(SelectionRequest req, Dataset ds) {
         Stats sortStats = new Stats();
         Stats quickStats = new Stats();
+        
+        int n = ds.scores.length;
+        int kIndex = req.toIndex0(n);
+        int[] idx = new int[n];
+        for (int i = 0; i < n; i++) {
+            idx[i] = i;
+        }
 
-        int kIndex = req.toIndex0(ds.scores.length);
         int finalResult = -1;
+        int chosenOriginalIndex = -1;
 
         if (req.method == MethodChoice.SORT || req.method == MethodChoice.BOTH) {
-            finalResult = sort.select(ds.scores.clone(), kIndex, sortStats);
+            int[] sc = ds.scores.clone();
+            int[] ix = idx.clone();
+            finalResult = sort.select(sc, ix, kIndex, sortStats);
+            chosenOriginalIndex = ix[kIndex];
+
         }
         if (req.method == MethodChoice.QUICKSELECT || req.method == MethodChoice.BOTH) {
-            finalResult = quick.select(ds.scores.clone(), kIndex, req.pivot, quickStats);
+            int[] sc = ds.scores.clone();
+            int[] ix = idx.clone();
+            finalResult = quick.select(sc, ix, kIndex, req.pivot, quickStats);
+            chosenOriginalIndex = ix[kIndex];
         }
 
-        return new SelectionResult(finalResult, sortStats, quickStats);
+        String displayName = null;
+        String[] names = ds.getStudentNames();
+        if (names != null && chosenOriginalIndex >= 0 && chosenOriginalIndex < names.length) {
+            displayName = names[chosenOriginalIndex];
+        }
+
+        return new SelectionResult(finalResult, sortStats, quickStats, displayName, chosenOriginalIndex);
     }
 }

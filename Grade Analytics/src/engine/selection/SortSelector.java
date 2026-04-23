@@ -3,13 +3,16 @@ package engine.selection;
 
 public class SortSelector {
     
-    public int select(int[] scores, int k0, Stats stats) {
+    public int select(int[] scores, int[] idx, int k0, Stats stats) {
 
         if(scores == null) {
             throw new IllegalArgumentException("scores cannot be null");
         }
         if(scores.length == 0){
             throw new IllegalArgumentException("scores cannot be empty");           
+        }
+        if(idx == null || idx.length != scores.length){
+            throw new IllegalArgumentException("idx is out of bounds");
         }
         if(k0 < 0 || k0 >= scores.length){
             throw new IllegalArgumentException("k0 is out of bounds");
@@ -19,6 +22,7 @@ public class SortSelector {
         }
 
         int n = scores.length;
+    
         
         long start = System.nanoTime();
 
@@ -34,15 +38,26 @@ public class SortSelector {
             }
 
             if (minIndex != i) {
-                int temp = scores[i];
-                scores[i] = scores[minIndex];
-                scores[minIndex] = temp;
-                stats.swaps++;
+                swap(scores, idx, i, minIndex, stats);
             }
         }
 
         stats.timeNanos = System.nanoTime() - start;
 
         return scores[k0];
+    }
+
+    private void swap(int[] scores, int[] idx, int i, int j, Stats stats) {
+        if (i == j) {
+            return;
+        }
+
+        stats.swaps++;
+        int ts = scores[i];
+        scores[i] = scores[j];
+        scores[j] = ts;
+        int ti = idx[i];
+        idx[i] = idx[j];
+        idx[j] = ti;
     }
 }
