@@ -316,6 +316,39 @@ public class MainFrame extends JFrame{
                 outputArea.append(nameLine);
 				outputArea.append("Mode: " + mode + "\n");
 	            outputArea.append("Value: " + result.getValue() + "\n");
+                
+				String[] names = currentDataset.getStudentNames();
+				int[] scores = currentDataset.getScores();
+				int selectedVal = result.getValue();
+
+				if (mode != SelectionMode.MEDIAN) {
+					outputArea.append("Matching student(s):\n");
+					boolean foundAny = false;
+
+					if (scores != null) {
+						if (names == null) {
+							//No names available in dataset, still show matching score rows by index
+							for (int i = 0; i < scores.length; i++) {
+								if (scores[i] == selectedVal) {
+									outputArea.append("- Student#" + (i + 1) + " (" + scores[i] + ")\n");
+									foundAny = true;
+								}
+							}
+						} else {
+							int n = Math.min(names.length, scores.length);
+							for (int i = 0; i < n; i++) {
+								if (scores[i] == selectedVal) {
+									String displayName =
+										(names[i] != null && !names[i].trim().isEmpty())
+											? names[i].trim()
+											: ("Student#" + (i + 1));
+									outputArea.append("- " + displayName + " (" + scores[i] + ")\n");
+									foundAny = true;
+								}
+							}
+						}
+					}
+				} 
 	            outputArea.append("Sort Time: " + result.getSortStats().timeNanos + "ns\n");
 	            outputArea.append("Quick Time: " + result.getQuickStats().timeNanos + "ns\n");
 	        } catch (NumberFormatException ex) {
