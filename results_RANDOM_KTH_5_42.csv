@@ -1,0 +1,6 @@
+size,selectionMode,k,percentile,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,avgQuickTimeNanos,avgQuickComparisons,avgQuickSwaps
+100,KTH,1,,Random,357180.00,537.00,0.00,12560.00,197.00,51.00
+200,KTH,1,,Random,168060.00,1278.00,0.00,14140.00,334.00,80.00
+300,KTH,1,,Random,279700.00,2094.00,0.00,22940.00,618.00,151.00
+400,KTH,1,,Random,258380.00,2953.00,0.00,15180.00,536.00,99.00
+500,KTH,1,,Random,261080.00,3853.00,0.00,30640.00,804.00,192.00

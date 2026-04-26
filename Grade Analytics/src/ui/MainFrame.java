@@ -400,8 +400,10 @@ public class MainFrame extends JFrame{
     
             DatasetType type = (DatasetType) datasetTypeCombo.getSelectedItem();
 
+			String out = "results_" + type.name() + "_" + mode.name() + "_" + repeats + "_" + seed + ".csv";
+
     
-            final BatchRequest batchReq = new BatchRequest(sizes, repeats, type, seed, req);
+            final BatchRequest batchReq = new BatchRequest(sizes, repeats, type, seed, out, null, req);
     
             outputArea.setText("");
             outputArea.append("=== Student Grade Analytics ===\n");
