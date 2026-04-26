@@ -1,5 +1,5 @@
 package engine.selection;
-
+import java.util.Arrays;
 
 public class SortSelector {
     
@@ -25,39 +25,40 @@ public class SortSelector {
     
         
         long start = System.nanoTime();
-
-        for (int i = 0; i < n - 1; i++) {
-            int minIndex = i;
-
-            for (int j = i + 1; j < n; j++) {
-                stats.comparisons++;
-
-                if (scores[j] < scores[minIndex]) {
-                    minIndex = j;
-                }
-            }
-
-            if (minIndex != i) {
-                swap(scores, idx, i, minIndex, stats);
-            }
+        // Pair each score with its original index
+        Pair[] pairs = new Pair[n];
+        for (int i = 0; i < n; i++) {
+            pairs[i] = new Pair(scores[i], idx[i]);
         }
 
+        //Full sort baseline: O(n log n)
+        Arrays.sort(pairs, (a, b) -> {
+            // Count comparator calls as comparisons
+            stats.comparisons++;
+            return Integer.compare(a.score, b.score);
+        });
+
+        // Write sorted data back
+        for (int i = 0; i < n; i++) {
+            scores[i] = pairs[i].score;
+            idx[i] = pairs[i].originalIndex;
+        }
+
+        stats.swaps = 0;
         stats.timeNanos = System.nanoTime() - start;
 
         return scores[k0];
     }
 
-    private void swap(int[] scores, int[] idx, int i, int j, Stats stats) {
-        if (i == j) {
-            return;
-        }
+    private static final class Pair {
+        final int score;
+        final int originalIndex;
 
-        stats.swaps++;
-        int ts = scores[i];
-        scores[i] = scores[j];
-        scores[j] = ts;
-        int ti = idx[i];
-        idx[i] = idx[j];
-        idx[j] = ti;
+        Pair(int score, int originalIndex) {
+            this.score = score;
+            this.originalIndex = originalIndex;
+        }
     }
+
+
 }
