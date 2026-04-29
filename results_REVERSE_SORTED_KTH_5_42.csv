@@ -1,6 +1,6 @@
 size,selectionMode,k,percentile,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,avgQuickTimeNanos,avgQuickComparisons,avgQuickSwaps
-100,KTH,1,,Reverse Sorted,16620.00,99.00,0.00,9780.00,154.00,57.00
-200,KTH,1,,Reverse Sorted,25500.00,199.00,0.00,2800.00,304.00,107.00
-300,KTH,1,,Reverse Sorted,34840.00,299.00,0.00,2100.00,454.00,157.00
-400,KTH,1,,Reverse Sorted,47280.00,399.00,0.00,3440.00,604.00,207.00
-500,KTH,1,,Reverse Sorted,56580.00,499.00,0.00,4940.00,754.00,257.00
+100,KTH,1,,Reverse Sorted,24940.00,99.00,50.00,3820.00,154.00,57.00
+200,KTH,1,,Reverse Sorted,38460.00,199.00,100.00,1780.00,304.00,107.00
+300,KTH,1,,Reverse Sorted,44740.00,299.00,150.00,3080.00,454.00,157.00
+400,KTH,1,,Reverse Sorted,59500.00,399.00,200.00,7360.00,604.00,207.00
+500,KTH,1,,Reverse Sorted,88440.00,499.00,250.00,4340.00,754.00,257.00
