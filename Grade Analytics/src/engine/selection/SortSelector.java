@@ -1,7 +1,5 @@
 package engine.selection;
 
-import java.util.Arrays;
-
 public class SortSelector {
 
     public int select(int[] scores, int[] idx, int k0, Stats stats) {
@@ -22,62 +20,71 @@ public class SortSelector {
             throw new IllegalArgumentException("stats cannot be null");
         }
 
-        int n = scores.length;
-
-        long start = System.nanoTime();
-        Pair[] pairs = new Pair[n];
-        for (int i = 0; i < n; i++) {
-            pairs[i] = new Pair(scores[i], idx[i], i);
-        }
-
         stats.comparisons = 0;
-        Arrays.sort(
-                pairs,
-                (a, b) -> {
-                    stats.comparisons++;
-                    return Integer.compare(a.score, b.score);
-                });
-
-        // Minimum swaps to reorder the original row into this sorted order
-        // (cycle decomposition on "item started at startPos -> sorted index").
-        int[] goalPosForStart = new int[n];
-        for (int p = 0; p < n; p++) {
-            goalPosForStart[pairs[p].startPos] = p;
-        }
-        boolean[] visited = new boolean[n];
-        long minSwaps = 0;
-        for (int i = 0; i < n; i++) {
-            if (visited[i]) {
-                continue;
-            }
-            int cycleLen = 0;
-            for (int j = i; !visited[j]; j = goalPosForStart[j]) {
-                visited[j] = true;
-                cycleLen++;
-            }
-            minSwaps += cycleLen - 1;
-        }
-        stats.swaps = minSwaps;
-
-        for (int i = 0; i < n; i++) {
-            scores[i] = pairs[i].score;
-            idx[i] = pairs[i].originalIndex;
-        }
-
+        stats.swaps = 0;
+        long start = System.nanoTime();
+        heapSort(scores, idx, stats);
         stats.timeNanos = System.nanoTime() - start;
 
         return scores[k0];
     }
 
-    private static final class Pair {
-        final int score;
-        final int originalIndex;
-        final int startPos;
+    private static void heapSort(int[] arr, int[] idx, Stats stats) {
+        int n = arr.length;
 
-        Pair(int score, int originalIndex, int startPos) {
-            this.score = score;
-            this.originalIndex = originalIndex;
-            this.startPos = startPos;
+        for (int i = (n / 2) - 1; i >= 0; i--) {
+            siftDown(arr, idx, n, i, stats);
         }
+
+        for (int end = n - 1; end > 0; end--) {
+            swap(arr, idx, 0, end, stats);
+            siftDown(arr, idx, end, 0, stats);
+        }
+    }
+
+    private static void siftDown(int[] arr, int[] idx, int heapSize, int root, Stats stats) {
+        int current = root;
+
+        while (true) {
+            int left = (2 * current) + 1;
+            int right = left + 1;
+            int largest = current;
+
+            if (left < heapSize) {
+                stats.comparisons++;
+                if (arr[left] > arr[largest]) {
+                    largest = left;
+                }
+            }
+
+            if (right < heapSize) {
+                stats.comparisons++;
+                if (arr[right] > arr[largest]) {
+                    largest = right;
+                }
+            }
+
+            if (largest == current) {
+                return;
+            }
+
+            swap(arr, idx, current, largest, stats);
+            current = largest;
+        }
+    }
+
+    private static void swap(int[] arr, int[] idx, int i, int j, Stats stats) {
+        if (i == j) {
+            return;
+        }
+
+        int t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
+
+        int ti = idx[i];
+        idx[i] = idx[j];
+        idx[j] = ti;
+        stats.swaps++;
     }
 }

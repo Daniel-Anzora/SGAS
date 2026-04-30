@@ -1,0 +1,6 @@
+size,selectionMode,k,percentile,datasetName,avgSortTimeNanos,avgSortComparisons,avgSortSwaps,avgQuickTimeNanos,avgQuickComparisons,avgQuickSwaps
+1000,MEDIAN,,,Reverse Sorted,139280.00,15965.00,8316.00,125620.00,1756.00,508.00
+2000,MEDIAN,,,Reverse Sorted,153020.00,35964.00,18708.00,40660.00,3506.00,1008.00
+4000,MEDIAN,,,Reverse Sorted,265680.00,80151.00,41436.00,54500.00,7006.00,2008.00
+8000,MEDIAN,,,Reverse Sorted,604500.00,176057.00,90776.00,83160.00,14006.00,4008.00
+10000,MEDIAN,,,Reverse Sorted,749040.00,226682.00,116696.00,25540.00,17506.00,5008.00

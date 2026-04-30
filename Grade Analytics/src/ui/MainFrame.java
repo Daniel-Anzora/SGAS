@@ -36,6 +36,7 @@ public class MainFrame extends JFrame{
         private JTextField batchSeedField;
         private JComboBox<DatasetType> datasetTypeCombo;
 		private JComboBox<SelectionMode> selectionModeCombo;
+		private JComboBox<PivotStrategy> pivotStrategyCombo;
 		private JButton runButton; // added
 
 		/*
@@ -73,6 +74,11 @@ public class MainFrame extends JFrame{
 	        selectionModeCombo = new JComboBox<>(SelectionMode.values());
 	        selectionModeCombo.setPreferredSize(new Dimension(120, 28));
 	        row1.add(selectionModeCombo);
+	        row1.add(new JLabel("Pivot:"));
+	        pivotStrategyCombo = new JComboBox<>(PivotStrategy.values());
+	        pivotStrategyCombo.setPreferredSize(new Dimension(120, 28));
+	        pivotStrategyCombo.setSelectedItem(PivotStrategy.MEDIAN3);
+	        row1.add(pivotStrategyCombo);
 
 	        valueField = new JTextField(6);
 	        valueField.setPreferredSize(new Dimension(70, 28));
@@ -281,7 +287,7 @@ public class MainFrame extends JFrame{
 	            //Parse the k value entered
 	            SelectionMode mode = (SelectionMode) selectionModeCombo.getSelectedItem();
 				MethodChoice method = MethodChoice.BOTH;
-				PivotStrategy pivot = PivotStrategy.MEDIAN3;
+				PivotStrategy pivot = (PivotStrategy) pivotStrategyCombo.getSelectedItem();
 
 				SelectionRequest req;
 				switch (mode) {
@@ -374,17 +380,18 @@ public class MainFrame extends JFrame{
                 repeats = Integer.parseInt(batchRepeatsField.getText().trim());
                 seed = Long.parseLong(batchSeedField.getText().trim());
 				mode = (SelectionMode) selectionModeCombo.getSelectedItem();
+				PivotStrategy pivot = (PivotStrategy) pivotStrategyCombo.getSelectedItem();
 				switch (mode) {
 					case KTH: 
 						k = Integer.parseInt(valueField.getText().trim());
-						req = new SelectionRequest(k, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+						req = new SelectionRequest(k, MethodChoice.BOTH, pivot);
 						break;
 					case PERCENTILE:
 						p = Double.parseDouble(valueField.getText().trim());
-						req = new SelectionRequest(p, MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+						req = new SelectionRequest(p, MethodChoice.BOTH, pivot);
 						break;
 					case MEDIAN:
-						req = new SelectionRequest(MethodChoice.BOTH, PivotStrategy.MEDIAN3);
+						req = new SelectionRequest(MethodChoice.BOTH, pivot);
 						break;
 					
 					default: 
