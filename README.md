@@ -3,16 +3,17 @@ CSC-401 group project for educational purposes
 
 //How to run code?
 
-Make sure to change directory to the correct folder and type java -cp bin engine.main.SGASMain in the terminal to run the program.
+Open the SGAS.Jar file located in SGAS\Grade Analytics folder.
 
 //how to reproduce experiment?
 
 There is a load CSV button to load a batch of data containing student names and scores.
     The CSV is located in the Documentation folder with file name sgademo.csv
+Alternatively a manual selection can be inputed in the box below labelled manual entry.
 
-Input a K and then click run Selection, a value, sorttime and quicktime will be provided. 
+Input a K and then click run Selection. A value, sorttime and quicktime will be provided. 
 
-In the next row below pick sizes, repeats, seed and a data type then click run batch.
+In the Batch experiment box, pick sizes, repeats, seed and a data type then click run batch.
 
 The batch results will be outputed into a CSV file named results.CSV.
     The file is located in Grade Analytics folder.
