@@ -5,6 +5,8 @@ CSC-401 group project for educational purposes
 
 Open the SGAS.Jar file located in SGAS\Grade Analytics folder.
 
+Alternatively in the terminal navigate to the SGAS\Grade Analytics folder and type java -cp out engine.main.SGASMain
+
 //how to reproduce experiment?
 
 There is a load CSV button to load a batch of data containing student names and scores.
@@ -55,3 +57,10 @@ SelectionService: Runs algorithm based on selection then returns results.
 SortSelector: Fully sorts the array then finds the kth smallest element.
 
 Stats: Tracks performance (excution time, element comparisons and number of swaps).
+
+
+Limitations: Memory usage was not a focus of this project, so Quickselect recursive calls consume additional stack space, memory usage or cache behavior was not measured or compared. Quickselect struggles in duplicate heavy large dataset leading to O(n^2) efficiency.   
+
+Runtime: In a dataset of 10k runtime is expected on average for heapsort to be 939340ns (.94ms) and for quickselect to be 98120ns (.1ms). 
+
+Memory usage: Memory usage or comparisons between heapsort and quickselect were not conducted. 
