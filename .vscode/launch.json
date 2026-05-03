@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "MemoryCompareBench",
+            "request": "launch",
+            "mainClass": "engine.main.MemoryCompareBench",
+            "projectName": "SGAS_71b639ca"
+        },
+        {
+            "type": "java",
             "name": "SGASMain",
             "request": "launch",
             "mainClass": "engine.main.SGASMain",

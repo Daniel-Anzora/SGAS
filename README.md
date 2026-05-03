@@ -40,6 +40,8 @@ ExperimentService: validate inpu, generate data, average the results then export
 
 SGASMain: Starts the GUI
 
+NamedBatchVerify: Alternate main method that was created to allow for manual entry for experimentation portion.
+
 MethodChoice: Specifies which algorithm path to run (Sort, QuickSelect, Both).
 
 PivotStrategy: Tells quickselect how to choose its pivot index. 
@@ -59,8 +61,10 @@ SortSelector: Fully sorts the array then finds the kth smallest element.
 Stats: Tracks performance (excution time, element comparisons and number of swaps).
 
 
+
+
 Limitations: Memory usage was not a focus of this project, so Quickselect recursive calls consume additional stack space, memory usage or cache behavior was not measured or compared. Quickselect struggles in duplicate heavy large dataset leading to O(n^2) efficiency.   
 
 Runtime: In a dataset of 10k runtime is expected on average for heapsort to be 939340ns (.94ms) and for quickselect to be 98120ns (.1ms). 
 
-Memory usage: Memory usage or comparisons between heapsort and quickselect were not conducted. 
+Memory usage: Memory usage between heapsort and quickselect were not conducted. 
